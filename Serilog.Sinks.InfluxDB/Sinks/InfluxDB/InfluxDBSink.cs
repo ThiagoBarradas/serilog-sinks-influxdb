@@ -128,16 +128,8 @@ namespace Serilog.Sinks.InfluxDB
                 messageTemplate.Text.Contains("HangFire:  - , Recurring job") ?
                     messageTemplate.Text.Split(new[] { ";Job:{" }, StringSplitOptions.RemoveEmptyEntries)?[0]
                     : HttpUtility.JavaScriptStringEncode(messageTemplate.Text)
-                // JsonConvert.ToString(messageTemplate.Text)
-                //.Replace("{", "\\{")
-                //.Replace("}", "\\}")
                 : string.Empty;
-            return new MessageTemplate(message, new[] { messageTemplate.Tokens.FirstOrDefault() });
-                //messageTemplate?.Text?.Replace("\n","")
-                //.Replace("\r", "")
-                //.Replace("\t", "")
-                //.Replace("\"", "\\\"")
-                //?? string.Empty;
+            return new MessageTemplate(message, new[] { messageTemplate.Tokens.FirstOrDefault() });                
         }
 
         /// <summary>
