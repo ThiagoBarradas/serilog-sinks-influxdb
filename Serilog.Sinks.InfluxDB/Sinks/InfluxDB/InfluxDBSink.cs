@@ -1,12 +1,15 @@
 ﻿using InfluxData.Net.Common.Enums;
 using InfluxData.Net.InfluxDb;
 using InfluxData.Net.InfluxDb.Models;
+using Newtonsoft.Json;
 using Serilog.Events;
+using Serilog.Parsing;
 using Serilog.Sinks.PeriodicBatching;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Serilog.Sinks.InfluxDB
 {
@@ -73,14 +76,14 @@ namespace Serilog.Sinks.InfluxDB
             var logEvents = events as List<LogEvent> ?? events.ToList();
             var points = new List<Point>(logEvents.Count);
 
-            foreach (var logEvent in logEvents)
+            foreach (var logEvent in FilteredSpecialChars(logEvents))
             {
                 var p = new Point
                 {
                     Name = _source,
                     Fields = logEvent.Properties.ToDictionary(k => k.Key, v => (object)v.Value),
                     Timestamp = logEvent.Timestamp.UtcDateTime
-                };
+                };                
 
                 // Add tags
                 if (logEvent.Exception != null) p.Tags.Add("exceptionType", logEvent.Exception.GetType().Name);
@@ -95,6 +98,46 @@ namespace Serilog.Sinks.InfluxDB
             }
 
             await _influxDbClient.Client.WriteAsync(points, _connectionInfo.DbName);
+        }
+
+        private IEnumerable<LogEvent> FilteredSpecialChars(IEnumerable<LogEvent> logEvents)
+        {
+            if (logEvents == null) yield break;
+
+            foreach (var logEvent in logEvents)
+            {
+                if (logEvent.MessageTemplate != null)
+                {
+                    yield return new LogEvent(logEvent.Timestamp
+                        , logEvent.Level
+                        , logEvent.Exception
+                        , StripSpecialCharacter(logEvent.MessageTemplate)
+                        , logEvent?.Properties.Select(o => new LogEventProperty(o.Key, o.Value))
+                        );
+                }
+                else
+                {
+                    yield return logEvent;
+                }
+            }
+        }
+
+        private MessageTemplate StripSpecialCharacter(MessageTemplate messageTemplate)
+        {            
+            var message = messageTemplate.Text != null ?
+                messageTemplate.Text.Contains("HangFire:  - , Recurring job") ?
+                    messageTemplate.Text.Split(new[] { ";Job:{" }, StringSplitOptions.RemoveEmptyEntries)?[0]
+                    : HttpUtility.JavaScriptStringEncode(messageTemplate.Text)
+                // JsonConvert.ToString(messageTemplate.Text)
+                //.Replace("{", "\\{")
+                //.Replace("}", "\\}")
+                : string.Empty;
+            return new MessageTemplate(message, new[] { messageTemplate.Tokens.FirstOrDefault() });
+                //messageTemplate?.Text?.Replace("\n","")
+                //.Replace("\r", "")
+                //.Replace("\t", "")
+                //.Replace("\"", "\\\"")
+                //?? string.Empty;
         }
 
         /// <summary>
