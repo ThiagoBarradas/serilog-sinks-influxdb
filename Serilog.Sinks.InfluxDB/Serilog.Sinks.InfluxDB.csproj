@@ -10,6 +10,13 @@
     <PackageProjectUrl>https://github.com/pada57/serilog-sinks-influxdb</PackageProjectUrl>
     <Product>Serilog.Sinks.InfluxDB.Syslog</Product>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>1.1.0</Version>
+    <PackageReleaseNotes>1.1: 
+- Use Uri instead of address/port in extensions methods and also in InfluxDbCOnnectionInfo object
+1.0:
+- Forked fromhttps://github.com/ThiagoBarradas/serilog-sinks-influxdb
+- Adaption for syslog format
+- Fix 400 errors due to invalid characters with JSON payload</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
