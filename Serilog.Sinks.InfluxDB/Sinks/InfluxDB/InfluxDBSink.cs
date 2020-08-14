@@ -104,7 +104,7 @@ namespace Serilog.Sinks.InfluxDB
         private InfluxDbClient CreateInfluxDbClient()
         {
             return new InfluxDbClient(
-                $"{_connectionInfo.Address}:{_connectionInfo.Port}",
+                _connectionInfo.Uri.AbsolutePath,
                 _connectionInfo.Username,
                 _connectionInfo.Password,
                 InfluxDbVersion.Latest);
