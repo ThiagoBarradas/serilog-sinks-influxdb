@@ -74,6 +74,8 @@ namespace Serilog
             if (connectionInfo == null) throw new ArgumentNullException(nameof(connectionInfo));
             if (connectionInfo.Uri == null) throw new ArgumentNullException(nameof(connectionInfo.Uri));
             if (connectionInfo.DbName == null) throw new ArgumentNullException(nameof(connectionInfo.DbName));
+            if (connectionInfo.Username == null) connectionInfo.Username = string.Empty;
+            if (connectionInfo.Password == null) connectionInfo.Password = string.Empty;
 
             var defaultedPeriod = period ?? InfluxDBSink.DefaultPeriod;
 
