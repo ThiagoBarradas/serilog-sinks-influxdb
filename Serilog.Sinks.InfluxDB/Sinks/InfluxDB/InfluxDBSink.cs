@@ -83,7 +83,7 @@ namespace Serilog.Sinks.InfluxDB
                     Name = _source,
                     Fields = logEvent.Properties.ToDictionary(k => k.Key, v => (object)v.Value),
                     Timestamp = logEvent.Timestamp.UtcDateTime
-                };                
+                };
 
                 // Add tags
                 if (logEvent.Exception != null) p.Tags.Add("exceptionType", logEvent.Exception.GetType().Name);
@@ -97,7 +97,36 @@ namespace Serilog.Sinks.InfluxDB
                 points.Add(p);
             }
 
+
             await _influxDbClient.Client.WriteAsync(points, _connectionInfo.DbName);
+
+            //TODO for syslogs see fields below
+
+            //var fields = new Dictionary<string, object>();
+            //fields.Add("facility_code", 16);
+            //fields.Add("message", loggingEvent.MessageObject);
+            //fields.Add("procid", "1234");
+            //fields.Add("severity_code", severity.SeverityCode);
+            //fields.Add("timestamp", DateTimeOffset.Now.ToUnixTimeMilliseconds() * 1000000);
+            //fields.Add("version", 1);
+
+            //var tags = new Dictionary<string, object>();
+            //tags.Add("appname", AppName);
+            //tags.Add("facility", Facility);
+            //tags.Add("host", Environment.MachineName);
+            //tags.Add("hostname", Environment.MachineName);
+            //tags.Add("severity", severity.Severity);
+            //try
+            //{
+            //    var apiResp = await client.Client.WriteAsync(new InfluxData.Net.InfluxDb.Models.Point()
+            //    {
+            //        Name = "syslog",
+            //        Fields = fields,
+            //        Tags = tags,
+            //        Timestamp = DateTimeOffset.Now.UtcDateTime
+            //    }, "_internal"
+            //);
+
         }
 
         private IEnumerable<LogEvent> FilteredSpecialChars(IEnumerable<LogEvent> logEvents)
@@ -123,13 +152,12 @@ namespace Serilog.Sinks.InfluxDB
         }
 
         private MessageTemplate StripSpecialCharacter(MessageTemplate messageTemplate)
-        {            
+        {
             var message = messageTemplate.Text != null ?
-                messageTemplate.Text.Contains("HangFire:  - , Recurring job") ?
-                    messageTemplate.Text.Split(new[] { ";Job:{" }, StringSplitOptions.RemoveEmptyEntries)?[0]
-                    : HttpUtility.JavaScriptStringEncode(messageTemplate.Text)
+                    HttpUtility.JavaScriptStringEncode(messageTemplate.Text)
                 : string.Empty;
-            return new MessageTemplate(message, new[] { messageTemplate.Tokens.FirstOrDefault() });                
+
+            return new MessageTemplate(message, new[] { new TextToken(message) });
         }
 
         /// <summary>
