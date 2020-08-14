@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 
 namespace Serilog.Sinks.InfluxDB
 {
@@ -12,21 +13,13 @@ namespace Serilog.Sinks.InfluxDB
         /// </summary>
         public InfluxDBConnectionInfo()
         {
-            Port = InfluxDBDefaults.DefaultPort;
             DbName = InfluxDBDefaults.DefaultDbName;
         }
 
         /// <summary>
-        /// Address of InfluxDB instance.
+        /// Uri to influx db instance.
         /// </summary>
-        public string Address { get; set; }
-
-        /// <summary>
-        /// Gets or sets the port used for the connection.
-        /// Default value is 8086.
-        /// </summary>
-        [DefaultValue(InfluxDBDefaults.DefaultPort)]
-        public int Port { get; set; }
+        public Uri Uri { get; set; }
 
         /// <summary>
         /// Gets or sets the database name in InfluxDB.
