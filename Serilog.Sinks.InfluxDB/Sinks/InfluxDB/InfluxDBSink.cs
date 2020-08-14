@@ -4,10 +4,13 @@ using InfluxData.Net.InfluxDb.Models;
 using Newtonsoft.Json;
 using Serilog.Events;
 using Serilog.Parsing;
+using Serilog.Sinks.InfluxDB.Sinks.InfluxDB;
 using Serilog.Sinks.PeriodicBatching;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -80,7 +83,7 @@ namespace Serilog.Sinks.InfluxDB
             {
                 var p = new Point
                 {
-                    Name = _source,
+                    Name = "syslog",
                     Fields = logEvent.Properties.ToDictionary(k => k.Key, v => (object)v.Value),
                     Timestamp = logEvent.Timestamp.UtcDateTime
                 };
@@ -89,45 +92,31 @@ namespace Serilog.Sinks.InfluxDB
                 if (logEvent.Exception != null) p.Tags.Add("exceptionType", logEvent.Exception.GetType().Name);
                 if (logEvent.MessageTemplate != null) p.Tags.Add("messageTemplate", logEvent.MessageTemplate.Text);
 
+                var severity = logEvent.Level.ToSeverity();
+
                 p.Tags.Add("level", logEvent.Level.ToString());
+                p.Tags.Add("appname", _source);
+                p.Tags.Add("facility", _source);
+                p.Tags.Add("host", Environment.MachineName);
+                p.Tags.Add("hostname", Environment.MachineName);
+                p.Tags.Add("severity", severity.ToString());
 
                 // Add rendered message
                 p.Fields["message"] = logEvent.RenderMessage(_formatProvider);
+                p.Fields["facility_code"] = 16;
+                p.Fields["procid"] = Process.GetCurrentProcess().Id;
+                p.Fields["severity_code"] = severity.ToString();
+                p.Fields["timestamp"] = logEvent.Timestamp.ToUnixTimeMilliseconds() * 1000000;
+                p.Fields["version"] = 1;
 
                 points.Add(p);
             }
 
 
             await _influxDbClient.Client.WriteAsync(points, _connectionInfo.DbName);
-
-            //TODO for syslogs see fields below
-
-            //var fields = new Dictionary<string, object>();
-            //fields.Add("facility_code", 16);
-            //fields.Add("message", loggingEvent.MessageObject);
-            //fields.Add("procid", "1234");
-            //fields.Add("severity_code", severity.SeverityCode);
-            //fields.Add("timestamp", DateTimeOffset.Now.ToUnixTimeMilliseconds() * 1000000);
-            //fields.Add("version", 1);
-
-            //var tags = new Dictionary<string, object>();
-            //tags.Add("appname", AppName);
-            //tags.Add("facility", Facility);
-            //tags.Add("host", Environment.MachineName);
-            //tags.Add("hostname", Environment.MachineName);
-            //tags.Add("severity", severity.Severity);
-            //try
-            //{
-            //    var apiResp = await client.Client.WriteAsync(new InfluxData.Net.InfluxDb.Models.Point()
-            //    {
-            //        Name = "syslog",
-            //        Fields = fields,
-            //        Tags = tags,
-            //        Timestamp = DateTimeOffset.Now.UtcDateTime
-            //    }, "_internal"
-            //);
-
         }
+
+        
 
         private IEnumerable<LogEvent> FilteredSpecialChars(IEnumerable<LogEvent> logEvents)
         {
