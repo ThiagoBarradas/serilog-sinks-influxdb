@@ -12,7 +12,8 @@ namespace Serilog
     {
         public static LoggerConfiguration InfluxDB(
             this LoggerSinkConfiguration loggerConfiguration,
-            string source,
+            string applicationName,
+            string instanceName,
             string uriString,
             string dbName,
             string username = null,
@@ -21,11 +22,12 @@ namespace Serilog
             int batchPostingLimit = InfluxDBSink.DefaultBatchPostingLimit,
             TimeSpan? period = null,
             IFormatProvider formatProvider = null)
-        {            
+        {
             if (string.IsNullOrEmpty(uriString)) throw new ArgumentNullException(nameof(uriString));
             if (!Uri.TryCreate(uriString, UriKind.Absolute, out var _)) throw new ArgumentException($"Invalid uri : {uriString}");
-            
-            return InfluxDB(loggerConfiguration, source, new Uri(uriString), dbName, username, password, restrictedToMinimumLevel, batchPostingLimit, period, formatProvider);
+
+            return InfluxDB(loggerConfiguration, applicationName, instanceName, new Uri(uriString), dbName,
+                username, password, restrictedToMinimumLevel, batchPostingLimit, period, formatProvider);
         }
 
         /// <summary>
@@ -33,7 +35,8 @@ namespace Serilog
         /// </summary>
         public static LoggerConfiguration InfluxDB(
             this LoggerSinkConfiguration loggerConfiguration,
-            string source,
+            string applicationName,
+            string instanceName,
             Uri uri,
             string dbName,
             string username = null,
@@ -55,7 +58,8 @@ namespace Serilog
                 Password = password
             };
 
-            return InfluxDB(loggerConfiguration, source, connectionInfo, restrictedToMinimumLevel, batchPostingLimit, period, formatProvider);
+            return InfluxDB(loggerConfiguration, applicationName, instanceName, connectionInfo,
+                restrictedToMinimumLevel, batchPostingLimit, period, formatProvider);
         }
 
         /// <summary>
@@ -63,14 +67,15 @@ namespace Serilog
         /// </summary>
         public static LoggerConfiguration InfluxDB(
             this LoggerSinkConfiguration loggerConfiguration,
-            string source,
+            string applicationName,
+            string instanceName,
             InfluxDBConnectionInfo connectionInfo,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             int batchPostingLimit = InfluxDBSink.DefaultBatchPostingLimit,
             TimeSpan? period = null,
             IFormatProvider formatProvider = null)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (applicationName == null) throw new ArgumentNullException(nameof(applicationName));
             if (connectionInfo == null) throw new ArgumentNullException(nameof(connectionInfo));
             if (connectionInfo.Uri == null) throw new ArgumentNullException(nameof(connectionInfo.Uri));
             if (connectionInfo.DbName == null) throw new ArgumentNullException(nameof(connectionInfo.DbName));
@@ -79,7 +84,8 @@ namespace Serilog
 
             var defaultedPeriod = period ?? InfluxDBSink.DefaultPeriod;
 
-            return loggerConfiguration.Sink(new InfluxDBSink(connectionInfo, source, batchPostingLimit, defaultedPeriod, formatProvider), restrictedToMinimumLevel);
+            return loggerConfiguration.Sink(new InfluxDBSink(connectionInfo, applicationName, instanceName, batchPostingLimit, defaultedPeriod, formatProvider),
+                restrictedToMinimumLevel);
         }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using InfluxData.Net.Common.Enums;
 using InfluxData.Net.InfluxDb;
 using InfluxData.Net.InfluxDb.Models;
-using Newtonsoft.Json;
 using Serilog.Events;
 using Serilog.Parsing;
 using Serilog.Sinks.InfluxDB.Sinks.InfluxDB;
@@ -10,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -18,7 +16,8 @@ namespace Serilog.Sinks.InfluxDB
 {
     internal class InfluxDBSink : PeriodicBatchingSink //InfluxDBSink
     {
-        private readonly string _source;
+        private readonly string _applicationName;
+        private readonly string _instanceName;
 
         private readonly IFormatProvider _formatProvider;
 
@@ -43,26 +42,42 @@ namespace Serilog.Sinks.InfluxDB
         /// </summary>
         public static readonly TimeSpan DefaultPeriod = TimeSpan.FromSeconds(30);
 
+        /// <inheritdoc />
+        /// <summary>
+        /// Construct a sink inserting into InfluxDB with the specified details.
+        /// </summary>
+        /// <param name="connectionInfo">Connection information used to construct InfluxDB client.</param>
+        /// <param name="applicationName">Application name in the InfluxDB database.</param>
+        /// <param name="instanceName">Facility name in the InfluxDB database.</param>
+        /// <param name="batchSizeLimit">The maximum number of events to post in a single batch.</param>
+        /// <param name="period">The time to wait between checking for event batches.</param>
+        /// <param name="formatProvider"></param>
+        public InfluxDBSink(InfluxDBConnectionInfo connectionInfo, string applicationName, string instanceName, int batchSizeLimit, TimeSpan period,
+            IFormatProvider formatProvider)
+            : base(batchSizeLimit, period)
+        {
+            _connectionInfo = connectionInfo ?? throw new ArgumentNullException(nameof(connectionInfo));
+            _applicationName = applicationName;
+            _instanceName = instanceName ?? applicationName;
+            _influxDbClient = CreateInfluxDbClient();
+            _formatProvider = formatProvider;
+
+            CreateDatabase();
+        }
 
         /// <inheritdoc />
         /// <summary>
         /// Construct a sink inserting into InfluxDB with the specified details.
         /// </summary>
         /// <param name="connectionInfo">Connection information used to construct InfluxDB client.</param>
-        /// <param name="source">Measurement name in the InfluxDB database.</param>
+        /// <param name="applicationName">Measurement name in the InfluxDB database.</param>
         /// <param name="batchSizeLimit">The maximum number of events to post in a single batch.</param>
         /// <param name="period">The time to wait between checking for event batches.</param>
         /// <param name="formatProvider"></param>
-        public InfluxDBSink(InfluxDBConnectionInfo connectionInfo, string source, int batchSizeLimit, TimeSpan period,
+        public InfluxDBSink(InfluxDBConnectionInfo connectionInfo, string applicationName, int batchSizeLimit, TimeSpan period,
             IFormatProvider formatProvider)
-            : base(batchSizeLimit, period)
+            : this(connectionInfo, applicationName, null, batchSizeLimit, period, formatProvider)
         {
-            _connectionInfo = connectionInfo ?? throw new ArgumentNullException(nameof(connectionInfo));
-            _source = source;
-            _influxDbClient = CreateInfluxDbClient();
-            _formatProvider = formatProvider;
-
-            CreateDatabase();
         }
 
         /// <inheritdoc />
@@ -79,30 +94,28 @@ namespace Serilog.Sinks.InfluxDB
             var logEvents = events as List<LogEvent> ?? events.ToList();
             var points = new List<Point>(logEvents.Count);
 
-            foreach (var logEvent in FilteredSpecialChars(logEvents))
+            foreach (var logEvent in logEvents) // FilteredSpecialChars(logEvents))
             {
                 var p = new Point
                 {
                     Name = "syslog",
-                    Fields = logEvent.Properties.ToDictionary(k => k.Key, v => (object)v.Value),
+                    Fields = new Dictionary<string, object>(),
                     Timestamp = logEvent.Timestamp.UtcDateTime
                 };
 
                 // Add tags
                 if (logEvent.Exception != null) p.Tags.Add("exceptionType", logEvent.Exception.GetType().Name);
-                if (logEvent.MessageTemplate != null) p.Tags.Add("messageTemplate", logEvent.MessageTemplate.Text);
 
                 var severity = logEvent.Level.ToSeverity();
 
                 p.Tags.Add("level", logEvent.Level.ToString());
-                p.Tags.Add("appname", _source);
-                p.Tags.Add("facility", _source);
-                p.Tags.Add("host", Environment.MachineName);
+                p.Tags.Add("appname", _applicationName);
+                p.Tags.Add("facility", _instanceName);
                 p.Tags.Add("hostname", Environment.MachineName);
                 p.Tags.Add("severity", severity.ToString());
 
                 // Add rendered message
-                p.Fields["message"] = logEvent.RenderMessage(_formatProvider);
+                p.Fields["message"] = StripSpecialCharacter(logEvent.RenderMessage(_formatProvider));
                 p.Fields["facility_code"] = 16;
                 p.Fields["procid"] = Process.GetCurrentProcess().Id;
                 p.Fields["severity_code"] = severity.ToString();
@@ -116,36 +129,16 @@ namespace Serilog.Sinks.InfluxDB
             await _influxDbClient.Client.WriteAsync(points, _connectionInfo.DbName);
         }
 
-        
-
-        private IEnumerable<LogEvent> FilteredSpecialChars(IEnumerable<LogEvent> logEvents)
+        private string StripSpecialCharacter(string text)
         {
-            if (logEvents == null) yield break;
-
-            foreach (var logEvent in logEvents)
-            {
-                if (logEvent.MessageTemplate != null)
-                {
-                    yield return new LogEvent(logEvent.Timestamp
-                        , logEvent.Level
-                        , logEvent.Exception
-                        , StripSpecialCharacter(logEvent.MessageTemplate)
-                        , logEvent?.Properties.Select(o => new LogEventProperty(o.Key, o.Value))
-                        );
-                }
-                else
-                {
-                    yield return logEvent;
-                }
-            }
+            return text != null ?
+                    HttpUtility.JavaScriptStringEncode(text)
+                : string.Empty;
         }
 
         private MessageTemplate StripSpecialCharacter(MessageTemplate messageTemplate)
         {
-            var message = messageTemplate.Text != null ?
-                    HttpUtility.JavaScriptStringEncode(messageTemplate.Text)
-                : string.Empty;
-
+            var message = StripSpecialCharacter(messageTemplate.Text);
             return new MessageTemplate(message, new[] { new TextToken(message) });
         }
 
