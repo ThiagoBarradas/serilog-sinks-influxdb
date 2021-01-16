@@ -62,7 +62,7 @@ namespace Serilog.Sinks.InfluxDB
             _influxDbClient = CreateInfluxDbClient();
             _formatProvider = formatProvider;
 
-            CreateDatabase();
+            CreateDatabaseIfNotExists();
         }
 
         /// <inheritdoc />
@@ -94,7 +94,7 @@ namespace Serilog.Sinks.InfluxDB
             var logEvents = events as List<LogEvent> ?? events.ToList();
             var points = new List<Point>(logEvents.Count);
 
-            foreach (var logEvent in logEvents) // FilteredSpecialChars(logEvents))
+            foreach (var logEvent in logEvents)
             {
                 var p = new Point
                 {
@@ -114,7 +114,7 @@ namespace Serilog.Sinks.InfluxDB
                 p.Tags.Add("hostname", Environment.MachineName);
                 p.Tags.Add("severity", severity.ToString());
 
-                // Add rendered message
+                // Add Fields - rendered message
                 p.Fields["message"] = StripSpecialCharacter(logEvent.RenderMessage(_formatProvider));
                 p.Fields["facility_code"] = 16;
                 p.Fields["procid"] = Process.GetCurrentProcess().Id;
@@ -136,12 +136,6 @@ namespace Serilog.Sinks.InfluxDB
                 : string.Empty;
         }
 
-        private MessageTemplate StripSpecialCharacter(MessageTemplate messageTemplate)
-        {
-            var message = StripSpecialCharacter(messageTemplate.Text);
-            return new MessageTemplate(message, new[] { new TextToken(message) });
-        }
-
         /// <summary>
         /// Initialize and return an InfluxDB client object.
         /// </summary>
@@ -156,14 +150,15 @@ namespace Serilog.Sinks.InfluxDB
         }
 
         /// <summary>
-        /// Create the log database in InfluxDB if it does not exists.
+        /// Create the log database in InfluxDB if it does not exists. 
+        /// Synchronous as should be done prior any emit done and also as don't want to move check on each emit if db exists
         /// </summary>
-        private void CreateDatabase()
+        private void CreateDatabaseIfNotExists()
         {
-            var dbList = _influxDbClient.Database.GetDatabasesAsync().Result;
+            var dbList = _influxDbClient.Database.GetDatabasesAsync().GetAwaiter().GetResult();
             if (dbList.All(db => db.Name != _connectionInfo.DbName))
             {
-                var _ = _influxDbClient.Database.CreateDatabaseAsync(_connectionInfo.DbName).Result;
+                var _ = _influxDbClient.Database.CreateDatabaseAsync(_connectionInfo.DbName).GetAwaiter().GetResult();
             }
         }
     }
