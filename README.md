@@ -1,5 +1,6 @@
 # serilog-sinks-influxdb
-A serilog sink that writes events to InfluxDB.
+A serilog sink that writes events to InfluxDB in syslog message format as described on the [Influx blog](https://www.influxdata.com/blog/writing-logs-directly-to-influxdb/)
+
 
 [![Latest Release](https://img.shields.io/nuget/v/Serilog.Sinks.InfluxDB.Syslog?logo=nuget&label=release&style=for-the-badge)](https://www.nuget.org/packages/Serilog.Sinks.InfluxDB.Syslog)
 [![Latest Pre-Release](https://img.shields.io/nuget/vpre/Serilog.Sinks.InfluxDB.Syslog?logo=nuget&color=yellow&label=pre-release&style=for-the-badge)](https://www.nuget.org/packages/Serilog.Sinks.InfluxDB.Syslog/absoluteLatest)
