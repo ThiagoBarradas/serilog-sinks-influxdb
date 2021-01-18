@@ -3,7 +3,6 @@ using InfluxData.Net.InfluxDb;
 using InfluxData.Net.InfluxDb.Models;
 using Serilog.Debugging;
 using Serilog.Events;
-using Serilog.Parsing;
 using Serilog.Sinks.InfluxDB.Sinks.InfluxDB;
 using Serilog.Sinks.PeriodicBatching;
 using System;
@@ -96,7 +95,6 @@ namespace Serilog.Sinks.InfluxDB
             var logEvents = events as List<LogEvent> ?? events.ToList();
             var points = new List<Point>(logEvents.Count);
             
-
             foreach (var logEvent in logEvents)
             {
                 var p = new Point
@@ -135,8 +133,7 @@ namespace Serilog.Sinks.InfluxDB
             {
                 //TODO Check if throw error for PeriodicBatchingSink
                 SelfLog.WriteLine(
-                        "A status code of {0} was received when attempting to send to {1}.  The event has been discarded and will not be placed back in the queue.",
-                        response.StatusCode.ToString(), _connectionInfo?.Uri);
+                        $"A status code of {response.StatusCode} was received when attempting to send to {_connectionInfo?.Uri}.  The event has been discarded and will not be placed back in the queue.");
             }
         }
 
