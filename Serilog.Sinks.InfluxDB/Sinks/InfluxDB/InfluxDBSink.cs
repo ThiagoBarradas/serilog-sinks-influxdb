@@ -1,8 +1,8 @@
 ﻿using InfluxData.Net.Common.Enums;
 using InfluxData.Net.InfluxDb;
 using InfluxData.Net.InfluxDb.Models;
+using Serilog.Debugging;
 using Serilog.Events;
-using Serilog.Parsing;
 using Serilog.Sinks.InfluxDB.Sinks.InfluxDB;
 using Serilog.Sinks.PeriodicBatching;
 using System;
@@ -11,10 +11,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
+using static Serilog.Sinks.InfluxDB.Sinks.InfluxDB.SyslogConst;
 
 namespace Serilog.Sinks.InfluxDB
 {
-    internal class InfluxDBSink : PeriodicBatchingSink //InfluxDBSink
+    internal class InfluxDBSink : PeriodicBatchingSink
     {
         private readonly string _applicationName;
         private readonly string _instanceName;
@@ -93,12 +94,12 @@ namespace Serilog.Sinks.InfluxDB
 
             var logEvents = events as List<LogEvent> ?? events.ToList();
             var points = new List<Point>(logEvents.Count);
-
+            
             foreach (var logEvent in logEvents)
             {
                 var p = new Point
                 {
-                    Name = "syslog",
+                    Name = PointName,
                     Fields = new Dictionary<string, object>(),
                     Timestamp = logEvent.Timestamp.UtcDateTime
                 };
@@ -108,25 +109,32 @@ namespace Serilog.Sinks.InfluxDB
 
                 var severity = logEvent.Level.ToSeverity();
 
-                p.Tags.Add("level", logEvent.Level.ToString());
-                p.Tags.Add("appname", _applicationName);
-                p.Tags.Add("facility", _instanceName);
-                p.Tags.Add("hostname", Environment.MachineName);
-                p.Tags.Add("severity", severity.ToString());
+                p.Tags.Add(Tags.Level, logEvent.Level.ToString());
+                p.Tags.Add(Tags.AppName, _applicationName);
+                p.Tags.Add(Tags.Facility, _instanceName);
+                p.Tags.Add(Tags.Hostname, Environment.MachineName);
+                p.Tags.Add(Tags.Severity, severity.ToString());
 
                 // Add Fields - rendered message
-                p.Fields["message"] = StripSpecialCharacter(logEvent.RenderMessage(_formatProvider));
-                p.Fields["facility_code"] = 16;
-                p.Fields["procid"] = Process.GetCurrentProcess().Id;
-                p.Fields["severity_code"] = severity.ToString();
-                p.Fields["timestamp"] = logEvent.Timestamp.ToUnixTimeMilliseconds() * 1000000;
-                p.Fields["version"] = 1;
+                p.Fields[Fields.Message] = StripSpecialCharacter(logEvent.RenderMessage(_formatProvider));
+                p.Fields[Fields.Facility] = 16;
+                p.Fields[Fields.ProcId] = Process.GetCurrentProcess().Id;
+                p.Fields[Fields.Severity] = severity.ToString();
+                p.Fields[Fields.Timestamp] = logEvent.Timestamp.ToUnixTimeMilliseconds() * 1000000;
+                p.Fields[Fields.Version] = 1;
 
                 points.Add(p);
             }
 
 
-            await _influxDbClient.Client.WriteAsync(points, _connectionInfo.DbName);
+            var response = await _influxDbClient.Client.WriteAsync(points, _connectionInfo.DbName);
+
+            if (!response.Success)
+            {
+                //TODO Check if throw error for PeriodicBatchingSink
+                SelfLog.WriteLine(
+                        $"A status code of {response.StatusCode} was received when attempting to send to {_connectionInfo?.Uri}.  The event has been discarded and will not be placed back in the queue.");
+            }
         }
 
         private string StripSpecialCharacter(string text)

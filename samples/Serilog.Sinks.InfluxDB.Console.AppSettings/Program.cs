@@ -1,21 +1,17 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Serilog.Debugging;
+using System;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Hosting;
 using System.CommandLine.Invocation;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using System.CommandLine.Parsing;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
-using System.Configuration;
-using Microsoft.Extensions.Configuration;
-using System.Linq;
-using System.Collections.Generic;
-using System.Net.Http;
-using Serilog.Debugging;
-using Serilog.Sinks.InfluxDB.Console.AppSettings;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Serilog.Sinks.InfluxDB.Console.AppSettings
 {

@@ -10,16 +10,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		CONTRIBUTING.md = CONTRIBUTING.md
 		LICENSE.md = LICENSE.md
 		README.md = README.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{DAFD76ED-CE6C-4A57-AF9F-3EAAE63E7607}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{38334756-6CD9-4BD4-9888-51BDB0C50ADF}"
-	ProjectSection(SolutionItems) = preProject
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		appveyor.yml = appveyor.yml
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{DAFD76ED-CE6C-4A57-AF9F-3EAAE63E7607}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serilog.Sinks.InfluxDB.Console.AppSettings", "samples\Serilog.Sinks.InfluxDB.Console.AppSettings\Serilog.Sinks.InfluxDB.Console.AppSettings.csproj", "{AF7A02DC-36C4-460D-9F90-7AE3DD6D1B4D}"
 EndProject

@@ -2,6 +2,10 @@
 A serilog sink that writes events to [InfluxDB](https://www.influxdata.com/) in syslog message format as described on the [Influx blog](https://www.influxdata.com/blog/writing-logs-directly-to-influxdb/).
 Supports platforms compatible with the [.NET Platform Standard](https://docs.microsoft.com/en-us/dotnet/standard/net-standard) `netstandard2.0`.
 
+Compatible with InfluxDB v1.X.X. 
+
+_NOTE: The **library will probably new dependencies for next release** in order to support InfluxDB v2.X.X
+
 ### Getting Started 
 
 To get started install the *Serilog.Sinks.InfluxDB.Syslog* package:
