@@ -1,7 +1,71 @@
-# serilog-sinks-influxdb
+# Serilog.Sinks.InfluxDB.Syslog [![Build status](https://ci.appveyor.com/api/projects/status/uc9y3i52t0dpvxq8/branch/main?svg=true)](https://ci.appveyor.com/project/MarkZither/serilog-sinks-influxdb/branch/main)[![nuget](https://img.shields.io/nuget/v/Serilog.Sinks.InfluxDB.Syslog.svg)](https://www.nuget.org/packages/Serilog.Sinks.InfluxDB.Syslog)
 A serilog sink that writes events to [InfluxDB](https://www.influxdata.com/) in syslog message format as described on the [Influx blog](https://www.influxdata.com/blog/writing-logs-directly-to-influxdb/).
 Supports platforms compatible with the [.NET Platform Standard](https://docs.microsoft.com/en-us/dotnet/standard/net-standard) `netstandard2.0`.
 
+### Getting Started 
+
+To get started install the *Serilog.Sinks.InfluxDB.Syslog* package:
+
+```powershell
+PM> Install-Package Serilog.Sinks.InfluxDB.Syslog
+```
+
+OR
+
+```bash
+$ dotnet add package Serilog.Sinks.InfluxDB.Syslog
+```
+
+If running locally for development purpose, you can use *docker-compose.yml* at root of this repository and adapt volumes if needed
+```
+$ docker-compose -f docker-compose.yml up -d
+```
+
+Point the logger to InfluxDb:
+
+```csharp
+Log.Logger = new LoggerConfiguration()    
+    .WriteTo.InfluxDB("Test App"      // Application Name
+        , "Test Instance"             // Instance or Environment Name
+        , "http://localhost:8086"     // InfluxDb Address
+        , "_internal");               // InfluxDb Database Name
+    .CreateLogger();
+```
+
+If using `appsettings.json` for configuration the following example illustrates using InfluxDb and Console sinks.
+
+```javascript
+{
+    "Serilog": {
+        "Using": ["Serilog.Sinks.Console", "Serilog.Sinks.InfluxDB.Syslog"],
+        "MinimumLevel": {
+          "Default": "Information",
+          "Override": {
+            "Microsoft": "Warning",
+            "System": "Warning"
+          }
+        },
+        "WriteTo": [{
+                "Name": "Console"
+            },
+            {
+                "Name": "InfluxDB",
+                "Args": {
+                  "applicationName": "Test App",
+                  "instanceName": "Test Instance",
+                  "uri": "http://localhost:8086",
+                  "dbName": "_internal"
+                }
+              }
+        ],
+        "Properties": {
+            "Application": "Serilog Sink InfluxDb Console Sample"
+        }
+    }
+}
+```
+
+### Build Status
 
 [![Latest Release](https://img.shields.io/nuget/v/Serilog.Sinks.InfluxDB.Syslog?logo=nuget&label=release&style=for-the-badge)](https://www.nuget.org/packages/Serilog.Sinks.InfluxDB.Syslog)
 [![Latest Pre-Release](https://img.shields.io/nuget/vpre/Serilog.Sinks.InfluxDB.Syslog?logo=nuget&color=yellow&label=pre-release&style=for-the-badge)](https://www.nuget.org/packages/Serilog.Sinks.InfluxDB.Syslog/absoluteLatest)
@@ -12,7 +76,7 @@ Supports platforms compatible with the [.NET Platform Standard](https://docs.mic
 | -------- | -------------- |
 |Main Branch|[![Build status](https://ci.appveyor.com/api/projects/status/uc9y3i52t0dpvxq8/branch/main?svg=true)](https://ci.appveyor.com/project/MarkZither/serilog-sinks-influxdb/branch/main)|
 
-## Benchmarks
+### Benchmarks
 
 BenchmarkDotNet=v0.12.1, OS=Windows 10.0.19042
 
@@ -26,3 +90,39 @@ Intel Core i7-2640M CPU 2.80GHz (Sandy Bridge), 1 CPU, 4 logical and 2 physical 
 |       Method |    N |     Mean |     Error |    StdDev |
 |------------- |----- |---------:|----------:|----------:|
 | LogSomething | 1000 | 5.781 us | 0.1832 us | 0.5315 us |
+
+### Troubleshooting
+
+> Nothing showed up, what can I do?
+
+If events don't appear in InfluxDb after looking in corresponding database via Chronograf, Grafana or else. Either your application was unable to contact the InfluxDb server, or else the InfluxDb server rejected the log events for some reason.
+
+#### Server-side issues
+
+The InfluxDb server may reject incoming events if they're missing required credentials ([check troubleshoot articles on influxdb](https://docs.influxdata.com/influxdb/v1.8/troubleshooting/), if the payload is corrupted somehow, or if the log events are too large to accept.
+
+
+#### Client-side issues
+
+If there's no information in the ingestion log, the application was probably unable to reach the server because of network configuration or connectivity issues. These are reported to the application through Serilog's `SelfLog`.
+
+Add the following line after the logger is configured to print any error information to the console:
+
+```csharp
+Serilog.Debugging.SelfLog.Enable(Console.Error);
+```
+
+If the console is not available, you can pass a delegate into `SelfLog.Enable()` that will be called with each error message:
+
+```csharp
+Serilog.Debugging.SelfLog.Enable(message => {
+    // Do something with `message`
+});
+```
+
+#### Troubleshooting checklist
+
+* Check InfluxDb connectivity and if _Server-side issues_ see section above
+* Turn on the Serilog SelfLog as described above to check for connectivity problems and other issues on the client side.
+* Make sure your application calls Log.CloseAndFlush(), or disposes the root Logger, before it exits - otherwise, buffered events may be lost.
+* If your app is a Windows console application, it is also important to close the console window by exiting the app; Windows console apps are terminated "hard" if the close button in the title bar is used, so events buffered for sending to InfluxDb may be lost if you use it.
