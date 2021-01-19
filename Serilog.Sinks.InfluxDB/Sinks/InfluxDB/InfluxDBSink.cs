@@ -54,7 +54,7 @@ namespace Serilog.Sinks.InfluxDB
         /// <param name="batchSizeLimit">The maximum number of events to post in a single batch.</param>
         /// <param name="period">The time to wait between checking for event batches.</param>
         /// <param name="formatProvider"></param>
-        public InfluxDBSink(InfluxDBConnectionInfo connectionInfo, string applicationName, string instanceName, IFormatProvider formatProvider)
+        public InfluxDBSink(InfluxDBConnectionInfo connectionInfo, string applicationName, string instanceName = null, IFormatProvider formatProvider = null)
         {
             _connectionInfo = connectionInfo ?? throw new ArgumentNullException(nameof(connectionInfo));
             _applicationName = applicationName;
@@ -64,22 +64,6 @@ namespace Serilog.Sinks.InfluxDB
             
             CreateDatabaseIfNotExists();
         }
-
-        /// <inheritdoc />
-        /// <summary>
-        /// Construct a sink inserting into InfluxDB with the specified details.
-        /// </summary>
-        /// <param name="connectionInfo">Connection information used to construct InfluxDB client.</param>
-        /// <param name="applicationName">Measurement name in the InfluxDB database.</param>
-        /// <param name="batchSizeLimit">The maximum number of events to post in a single batch.</param>
-        /// <param name="period">The time to wait between checking for event batches.</param>
-        /// <param name="formatProvider"></param>
-        public InfluxDBSink(InfluxDBConnectionInfo connectionInfo, string applicationName, int batchSizeLimit, TimeSpan period,
-            IFormatProvider formatProvider)
-            : this(connectionInfo, applicationName, null, formatProvider)
-        {
-        }
-
 
         /// <inheritdoc />
         /// <summary>
