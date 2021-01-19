@@ -3,6 +3,7 @@ using InfluxData.Net.InfluxDb;
 using InfluxData.Net.InfluxDb.Models;
 using Serilog.Debugging;
 using Serilog.Events;
+using Serilog.Formatting.Json;
 using Serilog.Sinks.InfluxDB.Sinks.InfluxDB;
 using Serilog.Sinks.PeriodicBatching;
 using System;
@@ -15,7 +16,7 @@ using static Serilog.Sinks.InfluxDB.Sinks.InfluxDB.SyslogConst;
 
 namespace Serilog.Sinks.InfluxDB
 {
-    internal class InfluxDBSink : PeriodicBatchingSink
+    internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
     {
         private readonly string _applicationName;
         private readonly string _instanceName;
@@ -30,7 +31,7 @@ namespace Serilog.Sinks.InfluxDB
         /// <summary>
         /// Client object used to connect to InfluxDB instance.
         /// </summary>
-        private readonly InfluxDbClient _influxDbClient;
+        private InfluxDbClient _influxDbClient;
 
         /// <summary>
         /// A reasonable default for the number of events posted in
@@ -53,16 +54,14 @@ namespace Serilog.Sinks.InfluxDB
         /// <param name="batchSizeLimit">The maximum number of events to post in a single batch.</param>
         /// <param name="period">The time to wait between checking for event batches.</param>
         /// <param name="formatProvider"></param>
-        public InfluxDBSink(InfluxDBConnectionInfo connectionInfo, string applicationName, string instanceName, int batchSizeLimit, TimeSpan period,
-            IFormatProvider formatProvider)
-            : base(batchSizeLimit, period)
+        public InfluxDBSink(InfluxDBConnectionInfo connectionInfo, string applicationName, string instanceName, IFormatProvider formatProvider)
         {
             _connectionInfo = connectionInfo ?? throw new ArgumentNullException(nameof(connectionInfo));
             _applicationName = applicationName;
             _instanceName = instanceName ?? applicationName;
             _influxDbClient = CreateInfluxDbClient();
-            _formatProvider = formatProvider;
-
+            _formatProvider = formatProvider;           
+            
             CreateDatabaseIfNotExists();
         }
 
@@ -77,24 +76,23 @@ namespace Serilog.Sinks.InfluxDB
         /// <param name="formatProvider"></param>
         public InfluxDBSink(InfluxDBConnectionInfo connectionInfo, string applicationName, int batchSizeLimit, TimeSpan period,
             IFormatProvider formatProvider)
-            : this(connectionInfo, applicationName, null, batchSizeLimit, period, formatProvider)
+            : this(connectionInfo, applicationName, null, formatProvider)
         {
         }
+
 
         /// <inheritdoc />
         /// <summary>
         /// Emit a batch of log events, running asynchronously.
         /// </summary>
         /// <param name="events">The events to emit.</param>
-        /// <remarks>Override either <see cref="M:Serilog.Sinks.PeriodicBatching.PeriodicBatchingSink.EmitBatch(System.Collections.Generic.IEnumerable{Serilog.Events.LogEvent})" /> or <see cref="M:Serilog.Sinks.PeriodicBatching.PeriodicBatchingSink.EmitBatchAsync(System.Collections.Generic.IEnumerable{Serilog.Events.LogEvent})" />,
-        /// not both.</remarks>
-        protected override async Task EmitBatchAsync(IEnumerable<LogEvent> events)
+        public async Task EmitBatchAsync(IEnumerable<LogEvent> batch)
         {
-            if (events == null) throw new ArgumentNullException(nameof(events));
+            if (batch == null) throw new ArgumentNullException(nameof(batch));
 
-            var logEvents = events as List<LogEvent> ?? events.ToList();
+            var logEvents = batch as List<LogEvent> ?? batch.ToList();
             var points = new List<Point>(logEvents.Count);
-            
+
             foreach (var logEvent in logEvents)
             {
                 var p = new Point
@@ -131,11 +129,28 @@ namespace Serilog.Sinks.InfluxDB
 
             if (!response.Success)
             {
-                //TODO Check if throw error for PeriodicBatchingSink
-                SelfLog.WriteLine(
-                        $"A status code of {response.StatusCode} was received when attempting to send to {_connectionInfo?.Uri}.  The event has been discarded and will not be placed back in the queue.");
+                // in case InfluxDbClient not throwing exception, throw new Exception to be handle by base class PeriodicBatchingSink
+
+                var message = $@"A status code of {response.StatusCode} was received when attempting to send to {_connectionInfo?.Uri}.
+The event has been discarded and will not be placed back in the queue.
+Response body: {response.Body}";
+
+                SelfLog.WriteLine(message);
+
+                throw new InfluxDbClientWriteException(message);
             }
         }
+
+        public Task OnEmptyBatchAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        public void Dispose()
+        {
+            _influxDbClient = null;
+        }
+
 
         private string StripSpecialCharacter(string text)
         {
@@ -169,5 +184,6 @@ namespace Serilog.Sinks.InfluxDB
                 var _ = _influxDbClient.Database.CreateDatabaseAsync(_connectionInfo.DbName).GetAwaiter().GetResult();
             }
         }
+
     }
 }

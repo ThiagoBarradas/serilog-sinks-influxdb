@@ -1,6 +1,7 @@
 ﻿using Serilog.Configuration;
 using Serilog.Events;
 using Serilog.Sinks.InfluxDB;
+using Serilog.Sinks.PeriodicBatching;
 using System;
 
 namespace Serilog
@@ -84,8 +85,35 @@ namespace Serilog
 
             var defaultedPeriod = period ?? InfluxDBSink.DefaultPeriod;
 
-            return loggerConfiguration.Sink(new InfluxDBSink(connectionInfo, applicationName, instanceName, batchPostingLimit, defaultedPeriod, formatProvider),
-                restrictedToMinimumLevel);
+            return InfluxDB(loggerConfiguration, applicationName, instanceName, connectionInfo,
+                new PeriodicBatchingSinkOptions() { BatchSizeLimit = batchPostingLimit, Period = defaultedPeriod },
+                restrictedToMinimumLevel, formatProvider);
+        }
+
+        /// <summary>
+        /// Adds the WriteTo.InfluxDB() extension method to <see cref="LoggerConfiguration"/>.
+        /// </summary>
+        public static LoggerConfiguration InfluxDB(
+            this LoggerSinkConfiguration loggerConfiguration,
+            string applicationName,
+            string instanceName,
+            InfluxDBConnectionInfo connectionInfo,
+            PeriodicBatchingSinkOptions batchingOptions,
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+            IFormatProvider formatProvider = null)
+        {
+            if (applicationName == null) throw new ArgumentNullException(nameof(applicationName));
+            if (connectionInfo == null) throw new ArgumentNullException(nameof(connectionInfo));
+            if (connectionInfo.Uri == null) throw new ArgumentNullException(nameof(connectionInfo.Uri));
+            if (connectionInfo.DbName == null) throw new ArgumentNullException(nameof(connectionInfo.DbName));
+            if (connectionInfo.Username == null) connectionInfo.Username = string.Empty;
+            if (connectionInfo.Password == null) connectionInfo.Password = string.Empty;
+            if (batchingOptions == null) batchingOptions = new PeriodicBatchingSinkOptions();
+
+            var influxDbSink = new InfluxDBSink(connectionInfo, applicationName, instanceName, formatProvider);
+            var batchingSink = new PeriodicBatchingSink(influxDbSink, batchingOptions);
+
+            return loggerConfiguration.Sink(batchingSink, restrictedToMinimumLevel);
         }
     }
 }
