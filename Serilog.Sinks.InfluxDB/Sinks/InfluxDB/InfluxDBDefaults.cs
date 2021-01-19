@@ -10,6 +10,6 @@
         /// <summary>
         /// Default database name in InfluxDB
         /// </summary>
-        public const string DefaultDbName = "LogDb";
+        public const string DefaultDbName = "_internal";
     }
 }

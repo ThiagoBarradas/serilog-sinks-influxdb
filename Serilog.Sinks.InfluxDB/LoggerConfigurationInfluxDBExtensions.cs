@@ -20,15 +20,14 @@ namespace Serilog
             string username = null,
             string password = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            int batchPostingLimit = InfluxDBSink.DefaultBatchPostingLimit,
-            TimeSpan? period = null,
+            PeriodicBatchingSinkOptions batchingOptions = null,
             IFormatProvider formatProvider = null)
         {
             if (string.IsNullOrEmpty(uriString)) throw new ArgumentNullException(nameof(uriString));
             if (!Uri.TryCreate(uriString, UriKind.Absolute, out var _)) throw new ArgumentException($"Invalid uri : {uriString}");
 
             return InfluxDB(loggerConfiguration, applicationName, instanceName, new Uri(uriString), dbName,
-                username, password, restrictedToMinimumLevel, batchPostingLimit, period, formatProvider);
+                username, password, restrictedToMinimumLevel, batchingOptions, formatProvider);
         }
 
         /// <summary>
@@ -43,24 +42,29 @@ namespace Serilog
             string username = null,
             string password = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            int batchPostingLimit = InfluxDBSink.DefaultBatchPostingLimit,
-            TimeSpan? period = null,
+            PeriodicBatchingSinkOptions batchingOptions = null,
             IFormatProvider formatProvider = null)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
             if (loggerConfiguration == null) throw new ArgumentNullException(nameof(loggerConfiguration));
-            if (string.IsNullOrEmpty(dbName)) throw new ArgumentException("dbName");
+            if (string.IsNullOrEmpty(dbName)) throw new ArgumentException(nameof(dbName));
 
-            var connectionInfo = new InfluxDBConnectionInfo
+            var sinkOptions = new InfluxDBSinkOptions()
             {
-                Uri = uri,
-                DbName = dbName,
-                Username = username,
-                Password = password
+                ApplicationName = applicationName,
+                InstanceName = instanceName,
+                ConnectionInfo = new InfluxDBConnectionInfo
+                {
+                    Uri = uri,
+                    DbName = dbName,
+                    Username = username,
+                    Password = password
+                },
+                BatchOptions = batchingOptions,
+                FormatProvider = formatProvider
             };
 
-            return InfluxDB(loggerConfiguration, applicationName, instanceName, connectionInfo,
-                restrictedToMinimumLevel, batchPostingLimit, period, formatProvider);
+            return InfluxDB(loggerConfiguration, sinkOptions, restrictedToMinimumLevel);
         }
 
         /// <summary>
@@ -68,50 +72,18 @@ namespace Serilog
         /// </summary>
         public static LoggerConfiguration InfluxDB(
             this LoggerSinkConfiguration loggerConfiguration,
-            string applicationName,
-            string instanceName,
-            InfluxDBConnectionInfo connectionInfo,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            int batchPostingLimit = InfluxDBSink.DefaultBatchPostingLimit,
-            TimeSpan? period = null,
-            IFormatProvider formatProvider = null)
+            InfluxDBSinkOptions sinkOptions,
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
-            if (applicationName == null) throw new ArgumentNullException(nameof(applicationName));
-            if (connectionInfo == null) throw new ArgumentNullException(nameof(connectionInfo));
-            if (connectionInfo.Uri == null) throw new ArgumentNullException(nameof(connectionInfo.Uri));
-            if (connectionInfo.DbName == null) throw new ArgumentNullException(nameof(connectionInfo.DbName));
-            if (connectionInfo.Username == null) connectionInfo.Username = string.Empty;
-            if (connectionInfo.Password == null) connectionInfo.Password = string.Empty;
+            if (sinkOptions == null) throw new ArgumentNullException(nameof(sinkOptions));
 
-            var defaultedPeriod = period ?? InfluxDBSink.DefaultPeriod;
+            if (sinkOptions.BatchOptions == null)
+            {
+                sinkOptions.BatchOptions = new PeriodicBatchingSinkOptions(); // initiazed with default from lib
+            }
 
-            return InfluxDB(loggerConfiguration, applicationName, instanceName, connectionInfo,
-                new PeriodicBatchingSinkOptions() { BatchSizeLimit = batchPostingLimit, Period = defaultedPeriod },
-                restrictedToMinimumLevel, formatProvider);
-        }
-
-        /// <summary>
-        /// Adds the WriteTo.InfluxDB() extension method to <see cref="LoggerConfiguration"/>.
-        /// </summary>
-        public static LoggerConfiguration InfluxDB(
-            this LoggerSinkConfiguration loggerConfiguration,
-            string applicationName,
-            string instanceName,
-            InfluxDBConnectionInfo connectionInfo,
-            PeriodicBatchingSinkOptions batchingOptions,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            IFormatProvider formatProvider = null)
-        {
-            if (applicationName == null) throw new ArgumentNullException(nameof(applicationName));
-            if (connectionInfo == null) throw new ArgumentNullException(nameof(connectionInfo));
-            if (connectionInfo.Uri == null) throw new ArgumentNullException(nameof(connectionInfo.Uri));
-            if (connectionInfo.DbName == null) throw new ArgumentNullException(nameof(connectionInfo.DbName));
-            if (connectionInfo.Username == null) connectionInfo.Username = string.Empty;
-            if (connectionInfo.Password == null) connectionInfo.Password = string.Empty;
-            if (batchingOptions == null) batchingOptions = new PeriodicBatchingSinkOptions();
-
-            var influxDbSink = new InfluxDBSink(connectionInfo, applicationName, instanceName, formatProvider);
-            var batchingSink = new PeriodicBatchingSink(influxDbSink, batchingOptions);
+            var influxDbSink = new InfluxDBSink(sinkOptions);
+            var batchingSink = new PeriodicBatchingSink(influxDbSink, sinkOptions.BatchOptions);
 
             return loggerConfiguration.Sink(batchingSink, restrictedToMinimumLevel);
         }

@@ -3,7 +3,6 @@ using InfluxData.Net.InfluxDb;
 using InfluxData.Net.InfluxDb.Models;
 using Serilog.Debugging;
 using Serilog.Events;
-using Serilog.Formatting.Json;
 using Serilog.Sinks.InfluxDB.Sinks.InfluxDB;
 using Serilog.Sinks.PeriodicBatching;
 using System;
@@ -33,17 +32,6 @@ namespace Serilog.Sinks.InfluxDB
         /// </summary>
         private InfluxDbClient _influxDbClient;
 
-        /// <summary>
-        /// A reasonable default for the number of events posted in
-        /// each batch.
-        /// </summary>
-        public const int DefaultBatchPostingLimit = 100;
-
-        /// <summary>
-        /// A reasonable default time to wait between checking for event batches.
-        /// </summary>
-        public static readonly TimeSpan DefaultPeriod = TimeSpan.FromSeconds(30);
-
         /// <inheritdoc />
         /// <summary>
         /// Construct a sink inserting into InfluxDB with the specified details.
@@ -54,13 +42,23 @@ namespace Serilog.Sinks.InfluxDB
         /// <param name="batchSizeLimit">The maximum number of events to post in a single batch.</param>
         /// <param name="period">The time to wait between checking for event batches.</param>
         /// <param name="formatProvider"></param>
-        public InfluxDBSink(InfluxDBConnectionInfo connectionInfo, string applicationName, string instanceName = null, IFormatProvider formatProvider = null)
+        public InfluxDBSink(InfluxDBSinkOptions options)
         {
-            _connectionInfo = connectionInfo ?? throw new ArgumentNullException(nameof(connectionInfo));
-            _applicationName = applicationName;
-            _instanceName = instanceName ?? applicationName;
+            if (options == null) throw new ArgumentNullException(nameof(options));
+
+            _connectionInfo = options.ConnectionInfo ?? throw new ArgumentNullException(nameof(options.ConnectionInfo));
+
+            if (options.ApplicationName == null) throw new ArgumentNullException(nameof(options.ApplicationName));
+            if (_connectionInfo.Uri == null) throw new ArgumentNullException(nameof(_connectionInfo.Uri));
+            if (_connectionInfo.DbName == null) throw new ArgumentNullException(nameof(_connectionInfo.DbName));
+            if (_connectionInfo.Username == null) _connectionInfo.Username = string.Empty;
+            if (_connectionInfo.Password == null) _connectionInfo.Password = string.Empty;
+
+            _applicationName = options.ApplicationName;
+            _instanceName = options.InstanceName ?? _applicationName;
+            _formatProvider = options.FormatProvider;
+
             _influxDbClient = CreateInfluxDbClient();
-            _formatProvider = formatProvider;           
             
             CreateDatabaseIfNotExists();
         }
