@@ -1,6 +1,7 @@
 ﻿using Serilog.Configuration;
 using Serilog.Events;
 using Serilog.Sinks.InfluxDB;
+using Serilog.Sinks.InfluxDB.Sinks.InfluxDB;
 using Serilog.Sinks.PeriodicBatching;
 using System;
 
@@ -77,9 +78,17 @@ namespace Serilog
         {
             if (sinkOptions == null) throw new ArgumentNullException(nameof(sinkOptions));
 
+            var defaultOptions = new PeriodicBatchingSinkOptions();
+
             if (sinkOptions.BatchOptions == null)
             {
-                sinkOptions.BatchOptions = new PeriodicBatchingSinkOptions(); // initiazed with default from lib
+                sinkOptions.BatchOptions = defaultOptions; // initialized with default from lib
+            }
+
+            if (sinkOptions.BatchOptions.QueueLimit == defaultOptions.QueueLimit)
+            {
+                // set back to null as don't want to have queue limit if was read null from settings file
+                sinkOptions.BatchOptions.QueueLimit = null;
             }
 
             var influxDbSink = new InfluxDBSink(sinkOptions);

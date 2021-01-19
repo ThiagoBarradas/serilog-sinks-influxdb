@@ -3,7 +3,6 @@ using InfluxData.Net.InfluxDb;
 using InfluxData.Net.InfluxDb.Models;
 using Serilog.Debugging;
 using Serilog.Events;
-using Serilog.Sinks.InfluxDB.Sinks.InfluxDB;
 using Serilog.Sinks.PeriodicBatching;
 using System;
 using System.Collections.Generic;
@@ -13,7 +12,7 @@ using System.Threading.Tasks;
 using System.Web;
 using static Serilog.Sinks.InfluxDB.Sinks.InfluxDB.SyslogConst;
 
-namespace Serilog.Sinks.InfluxDB
+namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
 {
     internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
     {
@@ -59,7 +58,7 @@ namespace Serilog.Sinks.InfluxDB
             _formatProvider = options.FormatProvider;
 
             _influxDbClient = CreateInfluxDbClient();
-            
+
             CreateDatabaseIfNotExists();
         }
 
