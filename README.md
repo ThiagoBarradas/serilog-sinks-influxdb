@@ -58,15 +58,6 @@ Log.Logger = new LoggerConfiguration()
                 .CreateLogger();
 ```
 
-```csharp
-Log.Logger = new LoggerConfiguration()    
-    .WriteTo.InfluxDB("Test App"      // Application Name
-        , "Test Instance"             // Instance or Environment Name
-        , "http://localhost:8086"     // InfluxDb Address
-        , "_internal");               // InfluxDb Database Name
-    .CreateLogger();
-```
-
 If using `appsettings.json` for configuration the following example illustrates using InfluxDb and Console sinks.
 
 ```javascript
