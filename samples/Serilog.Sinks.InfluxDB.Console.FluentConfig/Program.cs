@@ -24,9 +24,8 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                .Enrich.FromLogContext()
                .WriteTo.InfluxDB("Test App"      // Application Name
-                    , "Test Instance"            // Instance or Environment Name
                     , "http://localhost:8086"    // InfluxDb Address
-                    , "_internal")               // InfluxDb Database Name)
+                )
                .CreateLogger();
 
             await BuildCommandLine()
