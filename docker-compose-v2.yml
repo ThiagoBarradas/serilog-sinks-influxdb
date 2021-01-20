@@ -1,0 +1,12 @@
+version: '2'
+
+services:  
+  # Define an InfluxDB service
+  influxdb:
+    image: quay.io/influxdb/influxdb:v2.0.3
+    #image: influxdb:latest
+    # To uncomment and adapt for mounting volumes
+    volumes:
+        - D:/docker/data/influxdbv2:/root/.influxdbv2
+    ports:
+      - "8086:8086"

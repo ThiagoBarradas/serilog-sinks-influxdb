@@ -1,6 +1,5 @@
-﻿using InfluxData.Net.Common.Enums;
-using InfluxData.Net.InfluxDb;
-using InfluxData.Net.InfluxDb.Models;
+﻿using InfluxDB.Client;
+using InfluxDB.Client.Writes;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Sinks.PeriodicBatching;
@@ -10,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
+using InfluxDBDomain = InfluxDB.Client.Api.Domain;
 using static Serilog.Sinks.InfluxDB.Sinks.InfluxDB.SyslogConst;
 
 namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
@@ -29,7 +29,7 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
         /// <summary>
         /// Client object used to connect to InfluxDB instance.
         /// </summary>
-        private InfluxDbClient _influxDbClient;
+        private InfluxDBClient _influxDbClient;
 
         /// <inheritdoc />
         /// <summary>
@@ -76,7 +76,7 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
 
             foreach (var logEvent in logEvents)
             {
-                var p = new Point
+                var p = new PointData
                 {
                     Name = PointName,
                     Fields = new Dictionary<string, object>(),
@@ -108,18 +108,18 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
 
             var response = await _influxDbClient.Client.WriteAsync(points, _connectionInfo.DbName);
 
-            if (!response.Success)
-            {
-                // in case InfluxDbClient not throwing exception, throw new Exception to be handle by base class PeriodicBatchingSink
+            //            if (!response.Success)
+            //            {
+            //                // in case InfluxDbClient not throwing exception, throw new Exception to be handle by base class PeriodicBatchingSink
 
-                var message = $@"A status code of {response.StatusCode} was received when attempting to send to {_connectionInfo?.Uri}.
-The event has been discarded and will not be placed back in the queue.
-Response body: {response.Body}";
+            //                var message = $@"A status code of {response.StatusCode} was received when attempting to send to {_connectionInfo?.Uri}.
+            //The event has been discarded and will not be placed back in the queue.
+            //Response body: {response.Body}";
 
-                SelfLog.WriteLine(message);
+            //                SelfLog.WriteLine(message);
 
-                throw new InfluxDbClientWriteException(message);
-            }
+            //                throw new InfluxDbClientWriteException(message);
+            //            }
         }
 
         public Task OnEmptyBatchAsync()
@@ -129,6 +129,8 @@ Response body: {response.Body}";
 
         public void Dispose()
         {
+            //TODO add disposing pattern
+            _influxDbClient?.Dispose();
             _influxDbClient = null;
         }
 
@@ -144,13 +146,17 @@ Response body: {response.Body}";
         /// Initialize and return an InfluxDB client object.
         /// </summary>
         /// <returns></returns>
-        private InfluxDbClient CreateInfluxDbClient()
+        private InfluxDBClient CreateInfluxDbClient()
         {
-            return new InfluxDbClient(
-                _connectionInfo.Uri.ToString(),
-                _connectionInfo.Username,
-                _connectionInfo.Password,
-                InfluxDbVersion.Latest);
+            return InfluxDBClientFactory.Create(
+                InfluxDBClientOptions
+                    .Builder
+                    .CreateNew()
+                    .Url(_connectionInfo.Uri.ToString())
+                    .AuthenticateToken("UNvSlZQ4Jx-2CZDOtxdlnIZWOj3xJYmAO19BJRbzR6EBqPKonT2qknr4uL2SG57daytXRMOlz8hmS4h5Icp3HQ==".ToCharArray())
+                    .Bucket("logs")
+                    .Build()
+                    );
         }
 
         /// <summary>
@@ -159,10 +165,10 @@ Response body: {response.Body}";
         /// </summary>
         private void CreateDatabaseIfNotExists()
         {
-            var dbList = _influxDbClient.Database.GetDatabasesAsync().GetAwaiter().GetResult();
-            if (dbList.All(db => db.Name != _connectionInfo.DbName))
+            var buckets = _influxDbClient.GetBucketsApi().FindBucketsAsync().GetAwaiter().GetResult();
+            if (buckets.All(b => b.Name != _connectionInfo.DbName))
             {
-                var _ = _influxDbClient.Database.CreateDatabaseAsync(_connectionInfo.DbName).GetAwaiter().GetResult();
+                var _ = _influxDbClient.GetBucketsApi().CreateBucketAsync(new InfluxDBDomain.Bucket(name: _connectionInfo.DbName));
             }
         }
 
