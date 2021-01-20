@@ -1,33 +1,34 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Serilog.Debugging;
+using Serilog.Events;
+using Serilog.Sinks.InfluxDB.Console.Console.FluentConfig;
 using System;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Hosting;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Serilog.Sinks.InfluxDB.Console.AppSettings
+namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
 {
     class Program
     {
-        public static IConfiguration Configuration { get; } = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
-            .AddUserSecrets<Program>()
-            .AddEnvironmentVariables()
-            .Build();
-
-
         static async Task Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+               .MinimumLevel.Information()
+               .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+               .Enrich.FromLogContext()
+               .WriteTo.InfluxDB("Test App"      // Application Name
+                    , "Test Instance"            // Instance or Environment Name
+                    , "http://localhost:8086"    // InfluxDb Address
+                    , "_internal")               // InfluxDb Database Name)
+               .CreateLogger();
+
             await BuildCommandLine()
             .UseHost(_ => Host.CreateDefaultBuilder(),
             host =>
@@ -35,44 +36,37 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings
                 SelfLog.Enable(System.Console.Out);
                 host.UseSerilog((hostingContext, loggerConfiguration) =>
                 {
-                    loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration);
+                    // could be configured here, but prefer earlier configuration
                 })
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
-                    config.Sources.Clear();
-                    config.AddConfiguration(Configuration);
+                    // The next 2 lines commented out as they are added by default in the correct order
+                    // for more control first call config.Sources.Clear();
+                    //config.AddJsonFile("appsettings.json", optional: true);
+                    //config.AddEnvironmentVariables();
+                    config.AddUserSecrets<Program>();
                     var configuration = config.Build();
-
-                    if(args is not null)
-                    {
-                        config.AddCommandLine(args);
-                    }
 
                     if (args is null)
                     {
-                    //add some defaults from config
-                    var number = configuration.GetSection("Sample").GetValue<int>("number");
+                        //add some defaults from config
+                        var number = configuration.GetSection("Sample").GetValue<int>("number");
                         args = new string[0];
                         args = args.Append($"-n {number}").ToArray();
                     }
 
-                    configuration = config.Build();
+                    config.AddCommandLine(args);
                 })
-                    .ConfigureServices((hostContext, services) =>
-                    {
-                        services.AddOptions<SampleOptions>()
-                     .Bind(hostContext.Configuration.GetSection(SampleOptions.Sample));
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddOptions<SampleOptions>()
+                 .Bind(hostContext.Configuration.GetSection(SampleOptions.Sample));
 
-                    })
-                    .ConfigureLogging((hostContext, logging) =>
-                    {
-                        // nothing to do here as UseSerilog configures everything
-                    }
-                    );
-                })
-                .UseDefaults()
-                .Build()
-                .InvokeAsync(args);
+                });
+            })
+            .UseDefaults()
+            .Build()
+            .InvokeAsync(args);
         }
 
         private static CommandLineBuilder BuildCommandLine()
@@ -91,6 +85,14 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
 
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.InfluxDB("fluentSample", "fluentSampleInstance", new InfluxDBConnectionInfo()
+                {
+                    Uri = new Uri("http://127.0.0.1:8086"),
+                    DbName = "_internal",
+                })
+                .CreateLogger();
+
             for (var i = 0; i < options.Number; ++i)
             {
                 Log.Information("Hello, InfluxDB logger!");
@@ -102,8 +104,8 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings
             sw.Stop();
 
             System.Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds} ms");
-
             System.Console.WriteLine("Press any key to exit...");
+
             System.Console.ReadKey(true);
         }
     }
