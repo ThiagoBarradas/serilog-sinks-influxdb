@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serilog.Sinks.InfluxDB.Test
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{FE080BC4-5908-4C1D-BC7A-6753D7CDED59}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serilog.Sinks.InfluxDB.Console.AppSettings", "samples\Serilog.Sinks.InfluxDB.Console.AppSettings\Serilog.Sinks.InfluxDB.Console.AppSettings.csproj", "{AEF8263D-17A5-499B-8E17-5C22A52D7DC7}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serilog.Sinks.InfluxDB.Benchmarks", "Tests\Serilog.Sinks.InfluxDb.Benchmarks\Serilog.Sinks.InfluxDB.Benchmarks.csproj", "{2C10D4C4-5C35-4D91-B9F2-B9F902FBCC9D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1DA9F6FA-1889-4709-AB60-F73D046321A7}"
@@ -29,6 +27,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{DAFD
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serilog.Sinks.InfluxDB.Console.FluentConfig", "samples\Serilog.Sinks.InfluxDB.Console.FluentConfig\Serilog.Sinks.InfluxDB.Console.FluentConfig.csproj", "{760DB2F7-0DD6-4491-A7F6-B2B5F0F3D7CA}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serilog.Sinks.InfluxDB.Console.Appsettings", "samples\Serilog.Sinks.InfluxDB.Console.AppSettings\Serilog.Sinks.InfluxDB.Console.Appsettings.csproj", "{4B311A0D-1E6F-4E28-AF7B-DDDE08A5C0CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,10 +43,6 @@ Global
 		{243ED2E8-9833-4BEC-A7B7-8C3F557AB508}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{243ED2E8-9833-4BEC-A7B7-8C3F557AB508}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{243ED2E8-9833-4BEC-A7B7-8C3F557AB508}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AEF8263D-17A5-499B-8E17-5C22A52D7DC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AEF8263D-17A5-499B-8E17-5C22A52D7DC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AEF8263D-17A5-499B-8E17-5C22A52D7DC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AEF8263D-17A5-499B-8E17-5C22A52D7DC7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2C10D4C4-5C35-4D91-B9F2-B9F902FBCC9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2C10D4C4-5C35-4D91-B9F2-B9F902FBCC9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C10D4C4-5C35-4D91-B9F2-B9F902FBCC9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -55,6 +51,10 @@ Global
 		{760DB2F7-0DD6-4491-A7F6-B2B5F0F3D7CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{760DB2F7-0DD6-4491-A7F6-B2B5F0F3D7CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{760DB2F7-0DD6-4491-A7F6-B2B5F0F3D7CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B311A0D-1E6F-4E28-AF7B-DDDE08A5C0CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B311A0D-1E6F-4E28-AF7B-DDDE08A5C0CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B311A0D-1E6F-4E28-AF7B-DDDE08A5C0CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B311A0D-1E6F-4E28-AF7B-DDDE08A5C0CA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -62,9 +62,9 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{B6C0104A-B33D-4C0D-B402-5D3FE76BC39C} = {FE080BC4-5908-4C1D-BC7A-6753D7CDED59}
 		{243ED2E8-9833-4BEC-A7B7-8C3F557AB508} = {8B7684F7-9795-4A07-AC9E-510B09E0EA90}
-		{AEF8263D-17A5-499B-8E17-5C22A52D7DC7} = {DAFD76ED-CE6C-4A57-AF9F-3EAAE63E7607}
 		{2C10D4C4-5C35-4D91-B9F2-B9F902FBCC9D} = {8B7684F7-9795-4A07-AC9E-510B09E0EA90}
 		{760DB2F7-0DD6-4491-A7F6-B2B5F0F3D7CA} = {DAFD76ED-CE6C-4A57-AF9F-3EAAE63E7607}
+		{4B311A0D-1E6F-4E28-AF7B-DDDE08A5C0CA} = {DAFD76ED-CE6C-4A57-AF9F-3EAAE63E7607}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FE90C661-56CA-41CF-8B56-1AD2454B6B62}
