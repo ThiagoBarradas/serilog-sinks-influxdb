@@ -25,15 +25,37 @@ If running locally for development purpose, you can use *docker-compose.yml* at 
 $ docker-compose -f docker-compose.yml up -d
 ```
 
-Point the logger to InfluxDb:
+Point the logger to InfluxDb (quickest way using default *_internal* database):
 
 ```csharp
 Log.Logger = new LoggerConfiguration()    
-    .WriteTo.InfluxDB("Test App"      // Application Name
-        , "Test Instance"             // Instance or Environment Name
-        , "http://localhost:8086"     // InfluxDb Address
-        , "_internal");               // InfluxDb Database Name
-    .CreateLogger();
+    .WriteTo.InfluxDB(
+        applicationName: "Quick Test", 
+        uri : new Uri("http://127.0.0.1:8086"));
+```
+
+Another sample using *InfluxDBSinkOptions* for more control over periodic batching options and connection information:
+
+```csharp
+Log.Logger = new LoggerConfiguration()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
+                {
+                    ApplicationName = "fluentSample",               // Application Name
+                    InstanceName = "fluentSampleInstance",          // Instance or Environment Name
+                    ConnectionInfo = new InfluxDBConnectionInfo()   // Connection Details
+                    {
+                        Uri = new Uri("http://127.0.0.1:8086"),
+                        DbName = "_internal",
+                    },
+                    BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
+                    {
+                        BatchSizeLimit = 50,
+                        Period = TimeSpan.FromSeconds(10),
+                        EagerlyEmitFirstEvent = true,
+                        QueueLimit = null
+                    }
+                })
+                .CreateLogger();
 ```
 
 If using `appsettings.json` for configuration the following example illustrates using InfluxDb and Console sinks.
@@ -49,18 +71,29 @@ If using `appsettings.json` for configuration the following example illustrates 
             "System": "Warning"
           }
         },
-        "WriteTo": [{
-                "Name": "Console"
-            },
-            {
-                "Name": "InfluxDB",
-                "Args": {
-                  "applicationName": "Test App",
-                  "instanceName": "Test Instance",
-                  "uri": "http://localhost:8086",
-                  "dbName": "_internal"
+        "WriteTo": [
+          { "Name": "Console" },
+          {
+            "Name": "InfluxDB",
+            "Args": {
+              "sinkOptions": {
+                "applicationName": "testApp",
+                "instanceName": "testInstance",
+                "ConnectionInfo": {
+                  "Uri": "http://localhost:8086",
+                  "DbName": "_internal",
+                  "Username": "",
+                  "Password": ""
+                },
+                "BatchOptions": {
+                  "EagerlyEmitFirstEvent": true,
+                  "BatchSizeLimit": 200,
+                  "Period": "0.00:00:30",
+                  "QueueLimit":  null
                 }
               }
+            }
+          }
         ],
         "Properties": {
             "Application": "Serilog Sink InfluxDb Console Sample"
@@ -68,6 +101,9 @@ If using `appsettings.json` for configuration the following example illustrates 
     }
 }
 ```
+
+All those samples can be found under project subdirectory *samples* of this repository.
+
 
 ### Build Status
 

@@ -35,7 +35,6 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings
                 SelfLog.Enable(System.Console.Out);
                 host.UseSerilog((hostingContext, loggerConfiguration) =>
                 {
-                    // could be configured here, but prefer earlier configuration
                     loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration);
                 })
                 .ConfigureAppConfiguration((hostingContext, config) =>
@@ -104,7 +103,7 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings
 
             System.Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds} ms");
 
-            System.Console.WriteLine("Press any key to delete the temporary log file...");
+            System.Console.WriteLine("Press any key to exit...");
             System.Console.ReadKey(true);
         }
     }
