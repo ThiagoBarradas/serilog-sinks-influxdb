@@ -16,10 +16,19 @@ namespace Serilog.Sinks.InfluxDb.Benchmarks
         {
             var loggerConfig = new LoggerConfiguration()
                 .MinimumLevel.Information()
-                .WriteTo.InfluxDB("benchmark", "benchmarkInstance", new InfluxDBConnectionInfo()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
                 {
-                    Uri = new Uri("http://127.0.0.1:8086"),
-                    DbName = "_internal",
+                    ApplicationName = "benchmark",
+                    InstanceName = "benchmarkInstance",
+                    ConnectionInfo = new InfluxDBConnectionInfo()
+                    {
+                        Uri = new Uri("http://127.0.0.1:8086"),
+                        DbName = "_internal",
+                    },
+                    BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
+                    {
+                        BatchSizeLimit = 200
+                    }
                 });
             log = loggerConfig.CreateLogger();
         }
@@ -40,10 +49,9 @@ namespace Serilog.Sinks.InfluxDb.Benchmarks
         {
             var loggerConfig = new LoggerConfiguration()
                     .MinimumLevel.Information()
-                    .WriteTo.InfluxDB("tests", "testInstance", new InfluxDBConnectionInfo(){
-                        Uri = new Uri("http://127.0.0.1:8086"),
-                        DbName = "_internal",
-                    });
+                    .WriteTo.InfluxDB(
+                        applicationName: "tests", 
+                        uri : new Uri("http://127.0.0.1:8086"));
             var log = loggerConfig.CreateLogger();
 
             Console.WriteLine("Hello World!");
