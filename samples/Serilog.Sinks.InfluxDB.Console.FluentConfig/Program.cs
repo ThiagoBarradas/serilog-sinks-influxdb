@@ -98,7 +98,9 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
                     BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
                     {
                         BatchSizeLimit = 50,
-                        Period = TimeSpan.FromSeconds(10)
+                        Period = TimeSpan.FromSeconds(10),
+                        EagerlyEmitFirstEvent = true,
+                        QueueLimit = null
                     }
                 })
                 .CreateLogger();
