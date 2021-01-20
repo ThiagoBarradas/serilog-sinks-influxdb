@@ -4,7 +4,7 @@ Supports platforms compatible with the [.NET Platform Standard](https://docs.mic
 
 Compatible with InfluxDB v1.X.X. 
 
-_NOTE: The **library will probably new dependencies for next release** in order to support InfluxDB v2.X.X
+_NOTE: The **library will probably use new dependencies for next release** in order to support InfluxDB v2.X.X
 
 ### Getting Started 
 
