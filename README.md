@@ -38,24 +38,24 @@ Another sample using *InfluxDBSinkOptions* for more control over periodic batchi
 
 ```csharp
 Log.Logger = new LoggerConfiguration()
-                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
-                {
-                    ApplicationName = "fluentSample",               // Application Name
-                    InstanceName = "fluentSampleInstance",          // Instance or Environment Name
-                    ConnectionInfo = new InfluxDBConnectionInfo()   // Connection Details
-                    {
-                        Uri = new Uri("http://127.0.0.1:8086"),
-                        DbName = "_internal",
-                    },
-                    BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
-                    {
-                        BatchSizeLimit = 50,
-                        Period = TimeSpan.FromSeconds(10),
-                        EagerlyEmitFirstEvent = true,
-                        QueueLimit = null
-                    }
-                })
-                .CreateLogger();
+    .WriteTo.InfluxDB(new InfluxDBSinkOptions()
+    {
+        ApplicationName = "fluentSample",               // Application Name
+        InstanceName = "fluentSampleInstance",          // Instance or Environment Name
+        ConnectionInfo = new InfluxDBConnectionInfo()   // Connection Details
+        {
+            Uri = new Uri("http://127.0.0.1:8086"),
+            DbName = "_internal",
+        },
+        BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
+        {
+            BatchSizeLimit = 50,
+            Period = TimeSpan.FromSeconds(10),
+            EagerlyEmitFirstEvent = true,
+            QueueLimit = null
+        }
+    })
+    .CreateLogger();
 ```
 
 If using `appsettings.json` for configuration the following example illustrates using InfluxDb and Console sinks.
