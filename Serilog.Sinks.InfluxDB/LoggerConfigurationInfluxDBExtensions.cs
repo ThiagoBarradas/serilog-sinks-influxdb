@@ -15,9 +15,9 @@ namespace Serilog
         public static LoggerConfiguration InfluxDB(
             this LoggerSinkConfiguration loggerConfiguration,
             string applicationName,
-            string instanceName,
             string uriString,
-            string dbName,
+            string dbName = InfluxDBDefaults.DefaultDbName,
+            string instanceName = null,
             string username = null,
             string password = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
@@ -27,7 +27,7 @@ namespace Serilog
             if (string.IsNullOrEmpty(uriString)) throw new ArgumentNullException(nameof(uriString));
             if (!Uri.TryCreate(uriString, UriKind.Absolute, out var _)) throw new ArgumentException($"Invalid uri : {uriString}");
 
-            return InfluxDB(loggerConfiguration, applicationName, instanceName, new Uri(uriString), dbName,
+            return InfluxDB(loggerConfiguration, applicationName, new Uri(uriString), dbName, instanceName,
                 username, password, restrictedToMinimumLevel, batchingOptions, formatProvider);
         }
 
@@ -37,9 +37,9 @@ namespace Serilog
         public static LoggerConfiguration InfluxDB(
             this LoggerSinkConfiguration loggerConfiguration,
             string applicationName,
-            string instanceName,
             Uri uri,
-            string dbName,
+            string dbName = InfluxDBDefaults.DefaultDbName,
+            string instanceName = null,
             string username = null,
             string password = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,

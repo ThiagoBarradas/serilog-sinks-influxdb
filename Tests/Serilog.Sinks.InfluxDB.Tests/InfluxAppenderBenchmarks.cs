@@ -19,10 +19,19 @@ namespace Serilog.Sinks.InfluxDB.Tests
         public void SetupWithLayout()
         {
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.InfluxDB("benchmark", "benchmarkInstance", new InfluxDBConnectionInfo()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
                 {
-                    Uri = new Uri("http://127.0.0.1:8086"),
-                    DbName = "_internal",
+                    ApplicationName = "benchmark",
+                    InstanceName = "benchmarkInstance",
+                    ConnectionInfo = new InfluxDBConnectionInfo()
+                    {
+                        Uri = new Uri("http://127.0.0.1:8086"),
+                        DbName = "_internal",
+                    },
+                    BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
+                    {
+                        BatchSizeLimit = 100
+                    }
                 })
                 .CreateLogger();
 
@@ -85,10 +94,19 @@ namespace Serilog.Sinks.InfluxDB.Tests
             {
                 var loggerConfig = new LoggerConfiguration()
                     .MinimumLevel.Information()
-                    .WriteTo.InfluxDB("benchmark", "benchmarkInstance", new InfluxDBConnectionInfo()
+                    .WriteTo.InfluxDB(new InfluxDBSinkOptions()
                     {
-                        Uri = new Uri("http://127.0.0.1:8086"),
-                        DbName = "_internal",
+                        ApplicationName = "benchmark",
+                        InstanceName = "benchmarkInstance",
+                        ConnectionInfo = new InfluxDBConnectionInfo()
+                        {
+                            Uri = new Uri("http://127.0.0.1:8086"),
+                            DbName = "_internal",
+                        },
+                        BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
+                        {
+                            BatchSizeLimit = 100
+                        }
                     });
                 var logger = loggerConfig.CreateLogger();
 

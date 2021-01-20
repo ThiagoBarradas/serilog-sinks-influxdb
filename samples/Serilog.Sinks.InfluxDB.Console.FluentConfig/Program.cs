@@ -86,10 +86,20 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
             var sw = System.Diagnostics.Stopwatch.StartNew();
 
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.InfluxDB("fluentSample", "fluentSampleInstance", new InfluxDBConnectionInfo()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
                 {
-                    Uri = new Uri("http://127.0.0.1:8086"),
-                    DbName = "_internal",
+                    ApplicationName = "fluentSample",
+                    InstanceName = "fluentSampleInstance",
+                    ConnectionInfo = new InfluxDBConnectionInfo()
+                    {
+                        Uri = new Uri("http://127.0.0.1:8086"),
+                        DbName = "_internal",
+                    },
+                    BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
+                    {
+                        BatchSizeLimit = 50,
+                        Period = TimeSpan.FromSeconds(10)
+                    }
                 })
                 .CreateLogger();
 
