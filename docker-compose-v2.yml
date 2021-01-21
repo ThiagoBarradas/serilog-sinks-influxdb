@@ -10,3 +10,13 @@ services:
         - D:/docker/data/influxdbv2:/root/.influxdbv2
     ports:
       - "8086:8086"
+  grafana:
+    image: grafana/grafana:latest
+    #image: influxdb:latest
+    # To uncomment and adapt for mounting volumes
+    volumes:
+        - D:/docker/data/grafana/data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+    - influxdb

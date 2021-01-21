@@ -69,44 +69,38 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
         /// <param name="events">The events to emit.</param>
         public async Task EmitBatchAsync(IEnumerable<LogEvent> batch)
         {
+            //TODO from config
+            var orgId = "88e1f5a5ad074d9e";
             if (batch == null) throw new ArgumentNullException(nameof(batch));
 
             var logEvents = batch as List<LogEvent> ?? batch.ToList();
-            var points = new List<Point>(logEvents.Count);
+            var points = new List<PointData>(logEvents.Count);
 
             foreach (var logEvent in logEvents)
             {
-                var p = new PointData
-                {
-                    Name = PointName,
-                    Fields = new Dictionary<string, object>(),
-                    Timestamp = logEvent.Timestamp.UtcDateTime
-                };
-
-                // Add tags
-                if (logEvent.Exception != null) p.Tags.Add("exceptionType", logEvent.Exception.GetType().Name);
-
                 var severity = logEvent.Level.ToSeverity();
 
-                p.Tags.Add(Tags.Level, logEvent.Level.ToString());
-                p.Tags.Add(Tags.AppName, _applicationName);
-                p.Tags.Add(Tags.Facility, _instanceName);
-                p.Tags.Add(Tags.Hostname, Environment.MachineName);
-                p.Tags.Add(Tags.Severity, severity.ToString());
+                var p = PointData.Measurement(PointName)
+                    .Tag(Tags.Level, logEvent.Level.ToString())
+                    .Tag(Tags.AppName, _applicationName)
+                    .Tag(Tags.Facility, _instanceName)
+                    .Tag(Tags.Hostname, Environment.MachineName)
+                    .Tag(Tags.Severity, severity.ToString())
+                    .Field(Fields.Message, StripSpecialCharacter(logEvent.RenderMessage(_formatProvider)))
+                    .Field(Fields.Facility, 16)
+                    .Field(Fields.ProcId, Process.GetCurrentProcess().Id)
+                    .Field(Fields.Severity, severity.ToString())
+                    .Field(Fields.Timestamp, logEvent.Timestamp.ToUnixTimeMilliseconds() * 1000000)
+                    .Field(Fields.Version, 1)
+                    .Timestamp(logEvent.Timestamp.UtcDateTime, InfluxDBDomain.WritePrecision.Ms);
 
-                // Add Fields - rendered message
-                p.Fields[Fields.Message] = StripSpecialCharacter(logEvent.RenderMessage(_formatProvider));
-                p.Fields[Fields.Facility] = 16;
-                p.Fields[Fields.ProcId] = Process.GetCurrentProcess().Id;
-                p.Fields[Fields.Severity] = severity.ToString();
-                p.Fields[Fields.Timestamp] = logEvent.Timestamp.ToUnixTimeMilliseconds() * 1000000;
-                p.Fields[Fields.Version] = 1;
+                if (logEvent.Exception != null) p = p.Tag("exceptionType", logEvent.Exception.GetType().Name);
 
                 points.Add(p);
             }
 
 
-            var response = await _influxDbClient.Client.WriteAsync(points, _connectionInfo.DbName);
+            await _influxDbClient.GetWriteApiAsync().WritePointsAsync(_connectionInfo.DbName, orgId, points).ConfigureAwait(false);
 
             //            if (!response.Success)
             //            {
@@ -153,8 +147,9 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
                     .Builder
                     .CreateNew()
                     .Url(_connectionInfo.Uri.ToString())
-                    .AuthenticateToken("UNvSlZQ4Jx-2CZDOtxdlnIZWOj3xJYmAO19BJRbzR6EBqPKonT2qknr4uL2SG57daytXRMOlz8hmS4h5Icp3HQ==".ToCharArray())
-                    .Bucket("logs")
+                    //TODO Change options to accodomate two ways of authentication token or basic auth                    
+                    .AuthenticateToken("bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==".ToCharArray())
+                    .Bucket(_connectionInfo.DbName) //todo put in config with BucketName instead of DbName
                     .Build()
                     );
         }
@@ -168,7 +163,26 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
             var buckets = _influxDbClient.GetBucketsApi().FindBucketsAsync().GetAwaiter().GetResult();
             if (buckets.All(b => b.Name != _connectionInfo.DbName))
             {
-                var _ = _influxDbClient.GetBucketsApi().CreateBucketAsync(new InfluxDBDomain.Bucket(name: _connectionInfo.DbName));
+                //TODO add this retention in Seconds to config and OrgId
+                var orgId = "88e1f5a5ad074d9e";
+                var retention = new InfluxDBDomain.BucketRetentionRules(InfluxDBDomain.BucketRetentionRules.TypeEnum.Expire, 3600);
+                var bucket = _influxDbClient.GetBucketsApi().CreateBucketAsync(_connectionInfo.DbName, retention, orgId).GetAwaiter().GetResult();
+
+                SelfLog.WriteLine($"Bucket {bucket.Name} ({bucket.Id} / Org: {bucket.OrgID}) created at {bucket.CreatedAt}");
+
+                //// Write permission
+                //var resource = new InfluxDBDomain.PermissionResource { Id = bucket.Id, OrgID = orgId, Type = InfluxDBDomain.PermissionResource.TypeEnum.Buckets };
+
+                //var read = new InfluxDBDomain.Permission { Resource = resource, Action = InfluxDBDomain.Permission.ActionEnum.Read };
+                //var write = new InfluxDBDomain.Permission { Resource = resource, Action = InfluxDBDomain.Permission.ActionEnum.Write };
+
+                //var authorization = _influxDbClient.GetAuthorizationsApi()
+                //    .CreateAuthorizationAsync(orgId, new List<InfluxDBDomain.Permission> { read, write })
+                //    .GetAwaiter().GetResult();
+
+                //SelfLog.WriteLine($"Token generated successfully for bucket {bucket.Name}");                
+
+                //var token = authorization.Token;
             }
         }
 
