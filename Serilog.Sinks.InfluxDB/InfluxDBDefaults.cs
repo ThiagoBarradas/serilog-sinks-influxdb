@@ -8,8 +8,13 @@
         public const int DefaultPort = 8086;
 
         /// <summary>
-        /// Default database name in InfluxDB
+        /// Default bucket name in InfluxDB
         /// </summary>
-        public const string DefaultDbName = "_internal";
+        public const string DefaultBucketName = "_monitoring";
+
+        /// <summary>
+        /// Default retention period - 7days (in seconds)
+        /// </summary>
+        public const int DefaultRetentionPeriodInSeconds = 604_800;
     }
 }

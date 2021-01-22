@@ -9,11 +9,13 @@ namespace Serilog.Sinks.InfluxDB
     public class InfluxDBConnectionInfo
     {
         /// <summary>
-        /// Constructs the <see cref="InfluxDBConnectionInfo"/> with the default port and database name.
+        /// Constructs the <see cref="InfluxDBConnectionInfo"/> with the default port and bucket name.
         /// </summary>
         public InfluxDBConnectionInfo()
         {
-            DbName = InfluxDBDefaults.DefaultDbName;
+            BucketName = InfluxDBDefaults.DefaultBucketName;
+            CreateBucketIfNotExists = true;
+            BucketRetentionPeriodInSeconds = InfluxDBDefaults.DefaultRetentionPeriodInSeconds;
         }
 
         /// <summary>
@@ -22,20 +24,38 @@ namespace Serilog.Sinks.InfluxDB
         public Uri Uri { get; set; }
 
         /// <summary>
-        /// Gets or sets the database name in InfluxDB.
-        /// Default value is logDb.
+        /// Bucket name in InfluxDB.
+        /// Default value is _monitoring.
         /// </summary>
-        [DefaultValue(InfluxDBDefaults.DefaultDbName)]
-        public string DbName { get; set; }
+        [DefaultValue(InfluxDBDefaults.DefaultBucketName)]
+        public string BucketName { get; set; }
 
         /// <summary>
-        /// Gets or sets the username used for authentication.
+        /// Organization Id (unique id can be found under Profile > About > Common Ids)
         /// </summary>
-        public string Username { get; set; }
+        public string OrganizationId { get; set; }
 
         /// <summary>
-        /// Gets or sets the password used for authentication.
+        /// Token with at least write permissions to target <see cref="BucketName"/>
         /// </summary>
-        public string Password { get; set; }
+        public string Token { get; set; }
+
+        /// <summary>
+        /// Indicates if bucket should be created if not exists using super token to create it
+        /// Then another token with only write permissions to <see cref="BucketName"/> is automatically created
+        /// </summary>
+        [DefaultValue(true)]
+        public bool CreateBucketIfNotExists { get; set; }
+
+        /// <summary>
+        /// Bucket Retention period (in seconds).
+        /// </summary>
+        [DefaultValue(InfluxDBDefaults.DefaultRetentionPeriodInSeconds)]
+        public int BucketRetentionPeriodInSeconds { get; set; }
+
+        /// <summary>
+        /// Token to use to create bucket if needed and new write token when <see cref="CreateBucketIfNotExists"/> is set to true
+        /// </summary>
+        public string AllAccessToken { get; set; }
     }
 }

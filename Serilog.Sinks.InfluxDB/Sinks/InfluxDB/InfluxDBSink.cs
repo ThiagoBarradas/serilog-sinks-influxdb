@@ -1,4 +1,5 @@
 ﻿using InfluxDB.Client;
+using InfluxDB.Client.Core.Exceptions;
 using InfluxDB.Client.Writes;
 using Serilog.Debugging;
 using Serilog.Events;
@@ -9,8 +10,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
-using InfluxDBDomain = InfluxDB.Client.Api.Domain;
 using static Serilog.Sinks.InfluxDB.Sinks.InfluxDB.SyslogConst;
+using InfluxDBDomain = InfluxDB.Client.Api.Domain;
 
 namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
 {
@@ -36,8 +37,8 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
         /// Construct a sink inserting into InfluxDB with the specified details.
         /// </summary>
         /// <param name="connectionInfo">Connection information used to construct InfluxDB client.</param>
-        /// <param name="applicationName">Application name in the InfluxDB database.</param>
-        /// <param name="instanceName">Facility name in the InfluxDB database.</param>
+        /// <param name="applicationName">Application name in the InfluxDB bucket.</param>
+        /// <param name="instanceName">Facility name in the InfluxDB bucket.</param>
         /// <param name="batchSizeLimit">The maximum number of events to post in a single batch.</param>
         /// <param name="period">The time to wait between checking for event batches.</param>
         /// <param name="formatProvider"></param>
@@ -47,19 +48,20 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
 
             _connectionInfo = options.ConnectionInfo ?? throw new ArgumentNullException(nameof(options.ConnectionInfo));
 
-            if (options.ApplicationName == null) throw new ArgumentNullException(nameof(options.ApplicationName));
-            if (_connectionInfo.Uri == null) throw new ArgumentNullException(nameof(_connectionInfo.Uri));
-            if (_connectionInfo.DbName == null) throw new ArgumentNullException(nameof(_connectionInfo.DbName));
-            if (_connectionInfo.Username == null) _connectionInfo.Username = string.Empty;
-            if (_connectionInfo.Password == null) _connectionInfo.Password = string.Empty;
+            if (options.ApplicationName is null) throw new ArgumentNullException(nameof(options.ApplicationName));
+            if (_connectionInfo.Uri is null) throw new ArgumentNullException(nameof(_connectionInfo.Uri));
+            if (_connectionInfo.BucketName is null) throw new ArgumentNullException(nameof(_connectionInfo.BucketName));
+            if (_connectionInfo.OrganizationId is null) throw new ArgumentNullException(nameof(_connectionInfo.OrganizationId));
+            if (string.IsNullOrWhiteSpace(_connectionInfo.Token) && string.IsNullOrWhiteSpace(_connectionInfo.AllAccessToken))
+                throw new ArgumentNullException(nameof(_connectionInfo.Token), $"At least one Token should be given either {nameof(_connectionInfo.Token)} if already created with write permissions or {nameof(_connectionInfo.AllAccessToken)}");
 
             _applicationName = options.ApplicationName;
             _instanceName = options.InstanceName ?? _applicationName;
             _formatProvider = options.FormatProvider;
 
-            _influxDbClient = CreateInfluxDbClient();
+            CreateBucketIfNotExists();
 
-            CreateDatabaseIfNotExists();
+            _influxDbClient = CreateInfluxDbClient();
         }
 
         /// <inheritdoc />
@@ -69,8 +71,6 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
         /// <param name="events">The events to emit.</param>
         public async Task EmitBatchAsync(IEnumerable<LogEvent> batch)
         {
-            //TODO from config
-            var orgId = "88e1f5a5ad074d9e";
             if (batch == null) throw new ArgumentNullException(nameof(batch));
 
             var logEvents = batch as List<LogEvent> ?? batch.ToList();
@@ -100,7 +100,7 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
             }
 
 
-            await _influxDbClient.GetWriteApiAsync().WritePointsAsync(_connectionInfo.DbName, orgId, points).ConfigureAwait(false);
+            await _influxDbClient.GetWriteApiAsync().WritePointsAsync(_connectionInfo.BucketName, _connectionInfo.OrganizationId, points).ConfigureAwait(false);
 
             //            if (!response.Success)
             //            {
@@ -148,43 +148,92 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
                     .CreateNew()
                     .Url(_connectionInfo.Uri.ToString())
                     //TODO Change options to accodomate two ways of authentication token or basic auth                    
-                    .AuthenticateToken("bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==".ToCharArray())
-                    .Bucket(_connectionInfo.DbName) //todo put in config with BucketName instead of DbName
+                    .AuthenticateToken((_connectionInfo.Token ?? _connectionInfo.AllAccessToken).ToCharArray())
+                    .Bucket(_connectionInfo.BucketName) 
                     .Build()
                     );
         }
 
         /// <summary>
-        /// Create the log database in InfluxDB if it does not exists. 
+        /// Create the log Bucket in InfluxDB if it does not exists. 
         /// Synchronous as should be done prior any emit done and also as don't want to move check on each emit if db exists
         /// </summary>
-        private void CreateDatabaseIfNotExists()
+        private void CreateBucketIfNotExists()
         {
-            var buckets = _influxDbClient.GetBucketsApi().FindBucketsAsync().GetAwaiter().GetResult();
-            if (buckets.All(b => b.Name != _connectionInfo.DbName))
+            using (var createBucketClient = InfluxDBClientFactory.Create(
+                InfluxDBClientOptions
+                    .Builder
+                    .CreateNew()
+                    .Url(_connectionInfo.Uri.ToString())
+                    .AuthenticateToken((_connectionInfo.AllAccessToken ?? _connectionInfo.Token).ToCharArray())
+                    .Build()
+                    ))
             {
-                //TODO add this retention in Seconds to config and OrgId
-                var orgId = "88e1f5a5ad074d9e";
-                var retention = new InfluxDBDomain.BucketRetentionRules(InfluxDBDomain.BucketRetentionRules.TypeEnum.Expire, 3600);
-                var bucket = _influxDbClient.GetBucketsApi().CreateBucketAsync(_connectionInfo.DbName, retention, orgId).GetAwaiter().GetResult();
+                var bucket = GetBucketOrDefault(createBucketClient, _connectionInfo.BucketName);
 
-                SelfLog.WriteLine($"Bucket {bucket.Name} ({bucket.Id} / Org: {bucket.OrgID}) created at {bucket.CreatedAt}");
+                if (bucket == null)
+                {
+                    if (!_connectionInfo.CreateBucketIfNotExists) throw new InfluxDbClientCreateBucketException($"Cannot create bucket {_connectionInfo.BucketName} as not existing and parameter {_connectionInfo.CreateBucketIfNotExists} set to false");
 
-                //// Write permission
-                //var resource = new InfluxDBDomain.PermissionResource { Id = bucket.Id, OrgID = orgId, Type = InfluxDBDomain.PermissionResource.TypeEnum.Buckets };
-
-                //var read = new InfluxDBDomain.Permission { Resource = resource, Action = InfluxDBDomain.Permission.ActionEnum.Read };
-                //var write = new InfluxDBDomain.Permission { Resource = resource, Action = InfluxDBDomain.Permission.ActionEnum.Write };
-
-                //var authorization = _influxDbClient.GetAuthorizationsApi()
-                //    .CreateAuthorizationAsync(orgId, new List<InfluxDBDomain.Permission> { read, write })
-                //    .GetAwaiter().GetResult();
-
-                //SelfLog.WriteLine($"Token generated successfully for bucket {bucket.Name}");                
-
-                //var token = authorization.Token;
+                    var newBucket = CreateBucket(createBucketClient);
+                    _connectionInfo.Token = GenerateWriteToken(createBucketClient, newBucket);
+                }
             }
         }
 
+        private InfluxDBDomain.Bucket GetBucketOrDefault(InfluxDBClient createBucketClient, string bucketName)
+        {
+            //TODO use Maybe monad ?
+            InfluxDBDomain.Bucket bucket;
+            try
+            {
+                bucket = createBucketClient.GetBucketsApi()
+                    .FindBucketByNameAsync(bucketName)
+                    .GetAwaiter().GetResult();
+            }
+            catch (HttpException ex)
+            {
+                SelfLog.WriteLine($"Error while trying to get {_connectionInfo.BucketName} (Org: {_connectionInfo.OrganizationId}), Message : {ex.Message}. Check if Token has enough access to read (if only write to bucket then set to False parameter {_connectionInfo.CreateBucketIfNotExists}) or set AllAccessToken or is active token");
+                throw new InfluxDbClientCreateBucketException($"Cannot create bucket {_connectionInfo.BucketName}. Check if Token has enough access or set AllAccessToken or is active", ex);
+            }
+
+            return bucket;
+        }
+
+        private string GenerateWriteToken(InfluxDBClient createBucketClient, InfluxDBDomain.Bucket bucket)
+        {
+            var resource = new InfluxDBDomain.PermissionResource { Id = bucket.Id, OrgID = _connectionInfo.OrganizationId, Type = InfluxDBDomain.PermissionResource.TypeEnum.Buckets };
+
+            var write = new InfluxDBDomain.Permission(InfluxDBDomain.Permission.ActionEnum.Write, resource);
+
+            //TODO add error handling
+            var authorization = createBucketClient.GetAuthorizationsApi()
+                .CreateAuthorizationAsync(_connectionInfo.OrganizationId, new List<InfluxDBDomain.Permission> { write })
+                .GetAwaiter().GetResult();
+
+            SelfLog.WriteLine($"Token generated successfully for bucket {bucket.Name}, using it for write operations");
+
+            return authorization?.Token;
+        }
+
+        private InfluxDBDomain.Bucket CreateBucket(InfluxDBClient createBucketClient)
+        {
+            var retention = new InfluxDBDomain.BucketRetentionRules(InfluxDBDomain.BucketRetentionRules.TypeEnum.Expire, _connectionInfo.BucketRetentionPeriodInSeconds);
+
+            InfluxDBDomain.Bucket bucket;
+            try
+            {
+                bucket = createBucketClient.GetBucketsApi().CreateBucketAsync(_connectionInfo.BucketName, retention, _connectionInfo.OrganizationId).GetAwaiter().GetResult();
+            }
+            catch (HttpException ex)
+            {
+                SelfLog.WriteLine($"Error while creating {_connectionInfo.BucketName} (Org: {_connectionInfo.OrganizationId}), Message : {ex.Message}. Check if Token has enough access or set AllAccessToken or is active");
+                throw new InfluxDbClientCreateBucketException($"Cannot create bucket {_connectionInfo.BucketName}. Check if Token has enough access or set AllAccessToken or is active", ex);
+            }
+
+            SelfLog.WriteLine($"Bucket {bucket.Name} ({bucket.Id} / Org: {bucket.OrgID}) created at {bucket.CreatedAt}");
+
+            return bucket;
+        }
     }
 }

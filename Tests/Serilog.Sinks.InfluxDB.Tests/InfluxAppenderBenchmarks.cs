@@ -26,7 +26,7 @@ namespace Serilog.Sinks.InfluxDB.Tests
                     ConnectionInfo = new InfluxDBConnectionInfo()
                     {
                         Uri = new Uri("http://127.0.0.1:8086"),
-                        DbName = "_internal",
+                        BucketName = "_internal",
                     },
                     BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
                     {
@@ -101,7 +101,7 @@ namespace Serilog.Sinks.InfluxDB.Tests
                         ConnectionInfo = new InfluxDBConnectionInfo()
                         {
                             Uri = new Uri("http://127.0.0.1:8086"),
-                            DbName = "_internal",
+                            BucketName = "_internal",
                         },
                         BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
                         {
