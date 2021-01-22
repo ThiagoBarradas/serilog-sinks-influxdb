@@ -47,11 +47,15 @@ namespace Serilog.Sinks.InfluxDb.Benchmarks
         { }
         static void Main(string[] args)
         {
+            //TODO to retest
             var loggerConfig = new LoggerConfiguration()
                     .MinimumLevel.Information()
                     .WriteTo.InfluxDB(
-                        applicationName: "tests", 
-                        uri : new Uri("http://127.0.0.1:8086"));
+                        applicationName: "tests",
+                        organizationId: "88e1f5a5ad074d9e",
+                        bucketName:"logs",
+                        uri : new Uri("http://127.0.0.1:8086"),
+                        token: "W7V1AXAdcMAlYr9wvYUI_1Q8PVYZBitBER75yt5T88UtYUX1f1-coLoIsK2SAnueYpf4hCraVDqjXVJaHPr3PA==");
             var log = loggerConfig.CreateLogger();
 
             Console.WriteLine("Hello World!");

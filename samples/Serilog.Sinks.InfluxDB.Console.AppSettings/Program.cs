@@ -28,6 +28,7 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings
 
         static async Task Main(string[] args)
         {
+            //TODO ADAPT!!
             await BuildCommandLine()
             .UseHost(_ => Host.CreateDefaultBuilder(),
             host =>

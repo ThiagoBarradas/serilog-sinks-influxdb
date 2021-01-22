@@ -99,7 +99,8 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
                 points.Add(p);
             }
 
-
+            //Not handling exceptions and let handle by wrapping class PeriodicBatchingSink
+            //TODO wrap exception with InfluxDbClientWriteException
             await _influxDbClient.GetWriteApiAsync().WritePointsAsync(_connectionInfo.BucketName, _connectionInfo.OrganizationId, points).ConfigureAwait(false);
 
             //            if (!response.Success)
@@ -205,15 +206,24 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
             var resource = new InfluxDBDomain.PermissionResource { Id = bucket.Id, OrgID = _connectionInfo.OrganizationId, Type = InfluxDBDomain.PermissionResource.TypeEnum.Buckets };
 
             var write = new InfluxDBDomain.Permission(InfluxDBDomain.Permission.ActionEnum.Write, resource);
+            string token;
 
-            //TODO add error handling
-            var authorization = createBucketClient.GetAuthorizationsApi()
+            try
+            {
+                var authorization = createBucketClient.GetAuthorizationsApi()
                 .CreateAuthorizationAsync(_connectionInfo.OrganizationId, new List<InfluxDBDomain.Permission> { write })
                 .GetAwaiter().GetResult();
+                token = authorization?.Token;
+            }
+            catch (HttpException ex)
+            {
+                SelfLog.WriteLine($"Error while trying to get {_connectionInfo.BucketName} (Org: {_connectionInfo.OrganizationId}), Message : {ex.Message}. Check if Token has enough access to read (if only write to bucket then set to False parameter {_connectionInfo.CreateBucketIfNotExists}) or set AllAccessToken or is active token");
+                throw new InfluxDbClientCreateBucketException($"Cannot create token for bucket {_connectionInfo.BucketName} with write permissions. Check if Token has enough access or set AllAccessToken or is active", ex);
+            }
 
             SelfLog.WriteLine($"Token generated successfully for bucket {bucket.Name}, using it for write operations");
 
-            return authorization?.Token;
+            return token;
         }
 
         private InfluxDBDomain.Bucket CreateBucket(InfluxDBClient createBucketClient)
