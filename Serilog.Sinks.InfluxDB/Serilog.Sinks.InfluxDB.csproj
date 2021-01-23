@@ -13,11 +13,13 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <RepositoryUrl>https://github.com/pada57/serilog-sinks-influxdb</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Version>1.3.0</Version>    
+    <Version>1.3.1</Version>    
     <PackageReleaseNotes>
+      1.3.1:
+        - Adapting namespaces
       1.3:
         - Handling of response with selflog and throwing exceptions letting PeriodicBatchingSink handling backoffs/retries
-        - Adding single InfluxDBSinkOptions for creating sink, kept backward compatibility for previous extension methods      - 
+        - Adding single InfluxDBSinkOptions for creating sink, kept backward compatibility for previous extension methods      -
         - Add Benchmark tests and unit tests
         - Add sample projects
         - Add documentation and license (MIT)
@@ -34,8 +36,8 @@
         - Forked fromhttps://github.com/ThiagoBarradas/serilog-sinks-influxdb
         - Adaption for syslog format
         - Fix 400 errors due to invalid characters with JSON payload</PackageReleaseNotes>
-    <AssemblyVersion>1.3.0.0</AssemblyVersion>
-    <FileVersion>1.3.0.0</FileVersion>
+    <AssemblyVersion>1.3.1.0</AssemblyVersion>
+    <FileVersion>1.3.1.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
