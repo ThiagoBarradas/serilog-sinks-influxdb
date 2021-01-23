@@ -2,7 +2,7 @@ version: '2'
 
 services:  
   # Define an InfluxDB service
-  influxdb:
+  influxdb_v2:
     image: quay.io/influxdb/influxdb:v2.0.3
     #image: influxdb:latest
     # To uncomment and adapt for mounting volumes
@@ -20,5 +20,5 @@ services:
     ports:
         - "3000:3000"
     depends_on:
-        - influxdb
+        - influxdb_v2
     restart: always
