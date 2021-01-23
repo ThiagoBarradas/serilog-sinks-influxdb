@@ -1,4 +1,5 @@
 ﻿using InfluxDB.Client;
+using InfluxDB.Client.Api.Domain;
 using InfluxDB.Client.Core.Exceptions;
 using InfluxDB.Client.Writes;
 using Serilog.Debugging;
@@ -10,10 +11,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
-using static Serilog.Sinks.InfluxDB.Sinks.InfluxDB.SyslogConst;
-using InfluxDBDomain = InfluxDB.Client.Api.Domain;
+using static Serilog.Sinks.InfluxDB.SyslogConst;
+//using InfluxDBDomain = InfluxDB.Client.Api.Domain;
 
-namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
+namespace Serilog.Sinks.InfluxDB
 {
     internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
     {
@@ -69,11 +70,11 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
         /// Emit a batch of log events, running asynchronously.
         /// </summary>
         /// <param name="events">The events to emit.</param>
-        public async Task EmitBatchAsync(IEnumerable<LogEvent> batch)
+        public async Task EmitBatchAsync(IEnumerable<Events.LogEvent> batch)
         {
             if (batch == null) throw new ArgumentNullException(nameof(batch));
 
-            var logEvents = batch as List<LogEvent> ?? batch.ToList();
+            var logEvents = batch as List<Events.LogEvent> ?? batch.ToList();
             var points = new List<PointData>(logEvents.Count);
 
             foreach (var logEvent in logEvents)
@@ -92,7 +93,7 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
                     .Field(Fields.Severity, severity.ToString())
                     .Field(Fields.Timestamp, logEvent.Timestamp.ToUnixTimeMilliseconds() * 1000000)
                     .Field(Fields.Version, 1)
-                    .Timestamp(logEvent.Timestamp.UtcDateTime, InfluxDBDomain.WritePrecision.Ms);
+                    .Timestamp(logEvent.Timestamp.UtcDateTime, WritePrecision.Ms);
 
                 if (logEvent.Exception != null) p = p.Tag("exceptionType", logEvent.Exception.GetType().Name);
 
@@ -182,10 +183,10 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
             }
         }
 
-        private InfluxDBDomain.Bucket GetBucketOrDefault(InfluxDBClient createBucketClient, string bucketName)
+        private Bucket GetBucketOrDefault(InfluxDBClient createBucketClient, string bucketName)
         {
             //TODO use Maybe monad ?
-            InfluxDBDomain.Bucket bucket;
+            Bucket bucket;
             try
             {
                 bucket = createBucketClient.GetBucketsApi()
@@ -201,17 +202,17 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
             return bucket;
         }
 
-        private string GenerateWriteToken(InfluxDBClient createBucketClient, InfluxDBDomain.Bucket bucket)
+        private string GenerateWriteToken(InfluxDBClient createBucketClient, Bucket bucket)
         {
-            var resource = new InfluxDBDomain.PermissionResource { Id = bucket.Id, OrgID = _connectionInfo.OrganizationId, Type = InfluxDBDomain.PermissionResource.TypeEnum.Buckets };
+            var resource = new PermissionResource { Id = bucket.Id, OrgID = _connectionInfo.OrganizationId, Type = PermissionResource.TypeEnum.Buckets };
 
-            var write = new InfluxDBDomain.Permission(InfluxDBDomain.Permission.ActionEnum.Write, resource);
+            var write = new Permission(Permission.ActionEnum.Write, resource);
             string token;
 
             try
             {
                 var authorization = createBucketClient.GetAuthorizationsApi()
-                .CreateAuthorizationAsync(_connectionInfo.OrganizationId, new List<InfluxDBDomain.Permission> { write })
+                .CreateAuthorizationAsync(_connectionInfo.OrganizationId, new List<Permission> { write })
                 .GetAwaiter().GetResult();
                 token = authorization?.Token;
             }
@@ -226,11 +227,11 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
             return token;
         }
 
-        private InfluxDBDomain.Bucket CreateBucket(InfluxDBClient createBucketClient)
+        private Bucket CreateBucket(InfluxDBClient createBucketClient)
         {
-            var retention = new InfluxDBDomain.BucketRetentionRules(InfluxDBDomain.BucketRetentionRules.TypeEnum.Expire, _connectionInfo.BucketRetentionPeriodInSeconds);
+            var retention = new BucketRetentionRules(BucketRetentionRules.TypeEnum.Expire, _connectionInfo.BucketRetentionPeriodInSeconds);
 
-            InfluxDBDomain.Bucket bucket;
+            Bucket bucket;
             try
             {
                 bucket = createBucketClient.GetBucketsApi().CreateBucketAsync(_connectionInfo.BucketName, retention, _connectionInfo.OrganizationId).GetAwaiter().GetResult();

@@ -1,8 +1,8 @@
 ﻿using Serilog.Events;
 
-namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
+namespace Serilog.Sinks.InfluxDB
 {
-    public enum SyslogSeverity
+    internal enum SyslogSeverity
     {
         emerg,
         alert,
@@ -14,7 +14,7 @@ namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
         debug
     }
 
-    public static class SyslogExtensions
+    internal static class SyslogExtensions
     {
         public static SyslogSeverity ToSeverity(this LogEventLevel logEventLevel)
         {

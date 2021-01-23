@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.Serialization;
-using System.Text;
 
-namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
+namespace Serilog.Sinks.InfluxDB
 {
     public class InfluxDbClientWriteException : Exception
     {

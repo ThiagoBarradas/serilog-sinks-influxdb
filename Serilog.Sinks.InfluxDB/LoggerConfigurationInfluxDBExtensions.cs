@@ -1,7 +1,6 @@
 ﻿using Serilog.Configuration;
 using Serilog.Events;
 using Serilog.Sinks.InfluxDB;
-using Serilog.Sinks.InfluxDB.Sinks.InfluxDB;
 using Serilog.Sinks.PeriodicBatching;
 using System;
 
