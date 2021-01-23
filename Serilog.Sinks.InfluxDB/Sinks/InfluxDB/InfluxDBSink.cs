@@ -10,9 +10,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
-using static Serilog.Sinks.InfluxDB.Sinks.InfluxDB.SyslogConst;
+using static Serilog.Sinks.InfluxDB.SyslogConst;
 
-namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
+namespace Serilog.Sinks.InfluxDB
 {
     internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
     {

@@ -84,7 +84,7 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
 
-            Log.Logger = new LoggerConfiguration()
+            Log.Logger = new LoggerConfiguration()                
                 .WriteTo.InfluxDB(new InfluxDBSinkOptions()
                 {
                     ApplicationName = "fluentSample",

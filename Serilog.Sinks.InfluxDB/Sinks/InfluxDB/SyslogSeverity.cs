@@ -1,6 +1,6 @@
 ﻿using Serilog.Events;
 
-namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
+namespace Serilog.Sinks.InfluxDB
 {
     public enum SyslogSeverity
     {

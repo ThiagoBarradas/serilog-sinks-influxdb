@@ -1,5 +1,5 @@
 ﻿namespace Serilog.Sinks.InfluxDB
-{
+{ 
     public class InfluxDBDefaults
     {
         /// <summary>

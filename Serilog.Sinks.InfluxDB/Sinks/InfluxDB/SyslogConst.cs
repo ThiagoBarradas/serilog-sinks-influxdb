@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Serilog.Sinks.InfluxDB.Sinks.InfluxDB
+﻿namespace Serilog.Sinks.InfluxDB
 {
     internal static class SyslogConst
     {
