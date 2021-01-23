@@ -28,7 +28,6 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings
 
         static async Task Main(string[] args)
         {
-            //TODO ADAPT!!
             await BuildCommandLine()
             .UseHost(_ => Host.CreateDefaultBuilder(),
             host =>
@@ -94,8 +93,10 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings
 
             for (var i = 0; i < options.Number; ++i)
             {
-                Log.Information("Hello, InfluxDB logger!");
-                Log.Error("Error, InfluxDB logger!");
+                Log.Information($"Hello, InfluxDB logger! i => {i}");
+                Log.Warning("Warning, what is it ?");
+                Log.Error($"Error, when ? {DateTime.Now}");
+                Log.Debug($"var i => {i}");
             }
 
             Log.CloseAndFlush();

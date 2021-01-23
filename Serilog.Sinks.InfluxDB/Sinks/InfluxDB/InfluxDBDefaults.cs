@@ -1,4 +1,6 @@
-﻿namespace Serilog.Sinks.InfluxDB
+﻿using System;
+
+namespace Serilog.Sinks.InfluxDB
 {
     public class InfluxDBDefaults
     {
@@ -13,8 +15,8 @@
         public const string DefaultBucketName = "_monitoring";
 
         /// <summary>
-        /// Default retention period - 7days (in seconds)
+        /// Default retention period - 7days
         /// </summary>
-        public const int DefaultRetentionPeriodInSeconds = 604_800;
+        public static readonly TimeSpan DefaultRetentionPeriodInSeconds = TimeSpan.FromDays(7);
     }
 }

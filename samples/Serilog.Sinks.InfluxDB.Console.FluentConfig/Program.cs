@@ -106,7 +106,7 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
                         CreateBucketIfNotExists = true,
                         //To specify if Bucket needs to be created and if token not known or without all access permissions
                         AllAccessToken = "bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==",
-                        BucketRetentionPeriodInSeconds = (int)TimeSpan.FromDays(1).TotalSeconds
+                        BucketRetentionPeriod = TimeSpan.FromDays(1)
                     },
                     BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
                     {
@@ -122,7 +122,9 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
             for (var i = 0; i < options.Number; ++i)
             {
                 Log.Information("Hello, InfluxDB logger!");
-                Log.Error("Error, InfluxDB logger!");
+                Log.Warning("Warning, could be worse");
+                Log.Error("Error, Oops what could have happened");
+                Log.Debug($"Debug: i -> {i}");
             }
 
             Log.CloseAndFlush();

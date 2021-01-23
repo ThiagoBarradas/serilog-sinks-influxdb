@@ -3,7 +3,6 @@ using InfluxDB.Client.Api.Domain;
 using InfluxDB.Client.Core.Exceptions;
 using InfluxDB.Client.Writes;
 using Serilog.Debugging;
-using Serilog.Events;
 using Serilog.Sinks.PeriodicBatching;
 using System;
 using System.Collections.Generic;
@@ -12,7 +11,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using static Serilog.Sinks.InfluxDB.SyslogConst;
-//using InfluxDBDomain = InfluxDB.Client.Api.Domain;
 
 namespace Serilog.Sinks.InfluxDB
 {
@@ -27,11 +25,14 @@ namespace Serilog.Sinks.InfluxDB
         /// Connection info used to connect to InfluxDB instance.
         /// </summary>
         private readonly InfluxDBConnectionInfo _connectionInfo;
+        private readonly AuthMethods _authMethod;
 
         /// <summary>
         /// Client object used to connect to InfluxDB instance.
         /// </summary>
         private InfluxDBClient _influxDbClient;
+
+        private bool _disposed = false;
 
         /// <inheritdoc />
         /// <summary>
@@ -53,7 +54,15 @@ namespace Serilog.Sinks.InfluxDB
             if (_connectionInfo.Uri is null) throw new ArgumentNullException(nameof(_connectionInfo.Uri));
             if (_connectionInfo.BucketName is null) throw new ArgumentNullException(nameof(_connectionInfo.BucketName));
             if (_connectionInfo.OrganizationId is null) throw new ArgumentNullException(nameof(_connectionInfo.OrganizationId));
-            if (string.IsNullOrWhiteSpace(_connectionInfo.Token) && string.IsNullOrWhiteSpace(_connectionInfo.AllAccessToken))
+            if (string.IsNullOrWhiteSpace(_connectionInfo.Token) && string.IsNullOrWhiteSpace(_connectionInfo.AllAccessToken) && string.IsNullOrWhiteSpace(_connectionInfo.Username))
+                throw new ArgumentNullException($"At least one authentication field should be provided: {nameof(_connectionInfo.Username)}/{nameof(_connectionInfo.Password)} or {nameof(_connectionInfo.Token)}({nameof(_connectionInfo.AllAccessToken)} If Buckets has to be check and created if needed)");
+
+            if (string.IsNullOrWhiteSpace(_connectionInfo.Username))
+                _authMethod = AuthMethods.Token;
+            else
+                _authMethod = AuthMethods.Credentials;
+
+            if (_authMethod == AuthMethods.Token && string.IsNullOrWhiteSpace(_connectionInfo.Token) && string.IsNullOrWhiteSpace(_connectionInfo.AllAccessToken) && string.IsNullOrWhiteSpace(_connectionInfo.Username))
                 throw new ArgumentNullException(nameof(_connectionInfo.Token), $"At least one Token should be given either {nameof(_connectionInfo.Token)} if already created with write permissions or {nameof(_connectionInfo.AllAccessToken)}");
 
             _applicationName = options.ApplicationName;
@@ -62,7 +71,7 @@ namespace Serilog.Sinks.InfluxDB
 
             CreateBucketIfNotExists();
 
-            _influxDbClient = CreateInfluxDbClient();
+            _influxDbClient = CreateInfluxDbClientWithWriteAccess();
         }
 
         /// <inheritdoc />
@@ -70,7 +79,7 @@ namespace Serilog.Sinks.InfluxDB
         /// Emit a batch of log events, running asynchronously.
         /// </summary>
         /// <param name="events">The events to emit.</param>
-        public async Task EmitBatchAsync(IEnumerable<Events.LogEvent> batch)
+        public Task EmitBatchAsync(IEnumerable<Events.LogEvent> batch)
         {
             if (batch == null) throw new ArgumentNullException(nameof(batch));
 
@@ -100,22 +109,11 @@ namespace Serilog.Sinks.InfluxDB
                 points.Add(p);
             }
 
-            //Not handling exceptions and let handle by wrapping class PeriodicBatchingSink
-            //TODO wrap exception with InfluxDbClientWriteException
-            await _influxDbClient.GetWriteApiAsync().WritePointsAsync(_connectionInfo.BucketName, _connectionInfo.OrganizationId, points).ConfigureAwait(false);
-
-            //            if (!response.Success)
-            //            {
-            //                // in case InfluxDbClient not throwing exception, throw new Exception to be handle by base class PeriodicBatchingSink
-
-            //                var message = $@"A status code of {response.StatusCode} was received when attempting to send to {_connectionInfo?.Uri}.
-            //The event has been discarded and will not be placed back in the queue.
-            //Response body: {response.Body}";
-
-            //                SelfLog.WriteLine(message);
-
-            //                throw new InfluxDbClientWriteException(message);
-            //            }
+            //Not handling exceptions and let handle by wrapping class PeriodicBatchingSink            
+            // -> no async and let base class do the work for waiting
+            return _influxDbClient
+                    .GetWriteApiAsync()
+                    .WritePointsAsync(_connectionInfo.BucketName, _connectionInfo.OrganizationId, points);
         }
 
         public Task OnEmptyBatchAsync()
@@ -123,11 +121,31 @@ namespace Serilog.Sinks.InfluxDB
             return Task.CompletedTask;
         }
 
-        public void Dispose()
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        /// <filterpriority>2</filterpriority>
+        public void Dispose() => Dispose(true);
+
+        /// <summary>
+        /// Free resources held by the sink.
+        /// </summary>
+        /// <param name="disposing">If true, called because the object is being disposed; if false,
+        /// the object is being disposed from the finalizer.</param>
+        protected virtual void Dispose(bool disposing)
         {
-            //TODO add disposing pattern
-            _influxDbClient?.Dispose();
-            _influxDbClient = null;
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (disposing)
+            {
+                _influxDbClient?.Dispose();
+                _influxDbClient = null;
+            }
+
+            _disposed = true;
         }
 
 
@@ -142,18 +160,21 @@ namespace Serilog.Sinks.InfluxDB
         /// Initialize and return an InfluxDB client object.
         /// </summary>
         /// <returns></returns>
-        private InfluxDBClient CreateInfluxDbClient()
+        private InfluxDBClient CreateInfluxDbClientWithWriteAccess()
         {
-            return InfluxDBClientFactory.Create(
-                InfluxDBClientOptions
+            var builder = InfluxDBClientOptions
                     .Builder
                     .CreateNew()
                     .Url(_connectionInfo.Uri.ToString())
-                    //TODO Change options to accodomate two ways of authentication token or basic auth                    
-                    .AuthenticateToken((_connectionInfo.Token ?? _connectionInfo.AllAccessToken).ToCharArray())
-                    .Bucket(_connectionInfo.BucketName) 
-                    .Build()
-                    );
+                    .Bucket(_connectionInfo.BucketName)
+                    .Org(_connectionInfo.OrganizationId);
+
+            if (_authMethod == AuthMethods.Token)
+                builder.AuthenticateToken((_connectionInfo.Token ?? _connectionInfo.AllAccessToken).ToCharArray());
+            else
+                builder.Authenticate(_connectionInfo.Username, _connectionInfo.Password.ToCharArray());
+
+            return InfluxDBClientFactory.Create(builder.Build());
         }
 
         /// <summary>
@@ -162,25 +183,36 @@ namespace Serilog.Sinks.InfluxDB
         /// </summary>
         private void CreateBucketIfNotExists()
         {
-            using (var createBucketClient = InfluxDBClientFactory.Create(
-                InfluxDBClientOptions
-                    .Builder
-                    .CreateNew()
-                    .Url(_connectionInfo.Uri.ToString())
-                    .AuthenticateToken((_connectionInfo.AllAccessToken ?? _connectionInfo.Token).ToCharArray())
-                    .Build()
-                    ))
+            if (!_connectionInfo.CreateBucketIfNotExists) return;
+
+            using (var createBucketClient = CreateInfluxClientWithAllAccessIfGiven())
             {
                 var bucket = GetBucketOrDefault(createBucketClient, _connectionInfo.BucketName);
 
                 if (bucket == null)
                 {
-                    if (!_connectionInfo.CreateBucketIfNotExists) throw new InfluxDbClientCreateBucketException($"Cannot create bucket {_connectionInfo.BucketName} as not existing and parameter {_connectionInfo.CreateBucketIfNotExists} set to false");
-
                     var newBucket = CreateBucket(createBucketClient);
-                    _connectionInfo.Token = GenerateWriteToken(createBucketClient, newBucket);
+
+                    if (_authMethod == AuthMethods.Token)
+                        _connectionInfo.Token = GenerateWriteToken(createBucketClient, newBucket);
                 }
             }
+        }
+
+        private InfluxDBClient CreateInfluxClientWithAllAccessIfGiven()
+        {
+            var builder = InfluxDBClientOptions
+                    .Builder
+                    .CreateNew()
+                    .Url(_connectionInfo.Uri.ToString())
+                    .Org(_connectionInfo.OrganizationId);
+
+            if (_authMethod == AuthMethods.Token)
+                builder.AuthenticateToken((_connectionInfo.AllAccessToken ?? _connectionInfo.Token).ToCharArray());
+            else
+                builder.Authenticate(_connectionInfo.Username, _connectionInfo.Password.ToCharArray());
+
+            return InfluxDBClientFactory.Create(builder.Build());
         }
 
         private Bucket GetBucketOrDefault(InfluxDBClient createBucketClient, string bucketName)
@@ -204,6 +236,7 @@ namespace Serilog.Sinks.InfluxDB
 
         private string GenerateWriteToken(InfluxDBClient createBucketClient, Bucket bucket)
         {
+            //TODO see to generate write token with description
             var resource = new PermissionResource { Id = bucket.Id, OrgID = _connectionInfo.OrganizationId, Type = PermissionResource.TypeEnum.Buckets };
 
             var write = new Permission(Permission.ActionEnum.Write, resource);
@@ -212,8 +245,8 @@ namespace Serilog.Sinks.InfluxDB
             try
             {
                 var authorization = createBucketClient.GetAuthorizationsApi()
-                .CreateAuthorizationAsync(_connectionInfo.OrganizationId, new List<Permission> { write })
-                .GetAwaiter().GetResult();
+                    .CreateAuthorizationAsync(_connectionInfo.OrganizationId, new List<Permission> { write })
+                    .GetAwaiter().GetResult();
                 token = authorization?.Token;
             }
             catch (HttpException ex)
@@ -229,12 +262,15 @@ namespace Serilog.Sinks.InfluxDB
 
         private Bucket CreateBucket(InfluxDBClient createBucketClient)
         {
-            var retention = new BucketRetentionRules(BucketRetentionRules.TypeEnum.Expire, _connectionInfo.BucketRetentionPeriodInSeconds);
+            var retention = new BucketRetentionRules(BucketRetentionRules.TypeEnum.Expire, (int)_connectionInfo.BucketRetentionPeriod.TotalSeconds);
 
             Bucket bucket;
             try
             {
-                bucket = createBucketClient.GetBucketsApi().CreateBucketAsync(_connectionInfo.BucketName, retention, _connectionInfo.OrganizationId).GetAwaiter().GetResult();
+                bucket = createBucketClient
+                    .GetBucketsApi()
+                    .CreateBucketAsync(_connectionInfo.BucketName, retention, _connectionInfo.OrganizationId)
+                    .GetAwaiter().GetResult();
             }
             catch (HttpException ex)
             {
@@ -245,6 +281,12 @@ namespace Serilog.Sinks.InfluxDB
             SelfLog.WriteLine($"Bucket {bucket.Name} ({bucket.Id} / Org: {bucket.OrgID}) created at {bucket.CreatedAt}");
 
             return bucket;
+        }
+
+        private enum AuthMethods
+        {
+            Token,
+            Credentials
         }
     }
 }
