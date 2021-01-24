@@ -49,8 +49,8 @@ namespace Serilog.Sinks.InfluxDB
             if (options == null) throw new ArgumentNullException(nameof(options));
 
             _connectionInfo = options.ConnectionInfo ?? throw new ArgumentNullException(nameof(options.ConnectionInfo));
+            _applicationName = options.ApplicationName ?? throw new ArgumentNullException(nameof(options.ApplicationName));
 
-            if (options.ApplicationName is null) throw new ArgumentNullException(nameof(options.ApplicationName));
             if (_connectionInfo.Uri is null) throw new ArgumentNullException(nameof(_connectionInfo.Uri));
             if (_connectionInfo.BucketName is null) throw new ArgumentNullException(nameof(_connectionInfo.BucketName));
             if (_connectionInfo.OrganizationId is null) throw new ArgumentNullException(nameof(_connectionInfo.OrganizationId));
@@ -65,7 +65,6 @@ namespace Serilog.Sinks.InfluxDB
             if (_authMethod == AuthMethods.Token && string.IsNullOrWhiteSpace(_connectionInfo.Token) && string.IsNullOrWhiteSpace(_connectionInfo.AllAccessToken) && string.IsNullOrWhiteSpace(_connectionInfo.Username))
                 throw new ArgumentNullException(nameof(_connectionInfo.Token), $"At least one Token should be given either {nameof(_connectionInfo.Token)} if already created with write permissions or {nameof(_connectionInfo.AllAccessToken)}");
 
-            _applicationName = options.ApplicationName;
             _instanceName = options.InstanceName ?? _applicationName;
             _formatProvider = options.FormatProvider;
 
@@ -97,14 +96,14 @@ namespace Serilog.Sinks.InfluxDB
                     .Tag(Tags.Hostname, Environment.MachineName)
                     .Tag(Tags.Severity, severity.ToString())
                     .Field(Fields.Message, StripSpecialCharacter(logEvent.RenderMessage(_formatProvider)))
-                    .Field(Fields.Facility, 16)
+                    .Field(Fields.Facility, Fields.Values.Facility)
                     .Field(Fields.ProcId, Process.GetCurrentProcess().Id)
                     .Field(Fields.Severity, severity.ToString())
                     .Field(Fields.Timestamp, logEvent.Timestamp.ToUnixTimeMilliseconds() * 1000000)
-                    .Field(Fields.Version, 1)
+                    .Field(Fields.Version, Fields.Values.Version)
                     .Timestamp(logEvent.Timestamp.UtcDateTime, WritePrecision.Ms);
 
-                if (logEvent.Exception != null) p = p.Tag("exceptionType", logEvent.Exception.GetType().Name);
+                if (logEvent.Exception != null) p = p.Tag(Tags.ExceptionType, logEvent.Exception.GetType().Name);
 
                 points.Add(p);
             }
@@ -116,10 +115,7 @@ namespace Serilog.Sinks.InfluxDB
                     .WritePointsAsync(_connectionInfo.BucketName, _connectionInfo.OrganizationId, points);
         }
 
-        public Task OnEmptyBatchAsync()
-        {
-            return Task.CompletedTask;
-        }
+        public Task OnEmptyBatchAsync() => Task.CompletedTask;
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
@@ -236,18 +232,19 @@ namespace Serilog.Sinks.InfluxDB
 
         private string GenerateWriteToken(InfluxDBClient createBucketClient, Bucket bucket)
         {
-            //TODO see to generate write token with description
             var resource = new PermissionResource { Id = bucket.Id, OrgID = _connectionInfo.OrganizationId, Type = PermissionResource.TypeEnum.Buckets };
 
             var write = new Permission(Permission.ActionEnum.Write, resource);
+            var authorization = new Authorization(_connectionInfo.OrganizationId, new List<Permission> { write }, description: $"{nameof(Permission.ActionEnum.Write)} Token for Bucket '{bucket.Name}' (Serilog)");
+
             string token;
 
             try
             {
-                var authorization = createBucketClient.GetAuthorizationsApi()
-                    .CreateAuthorizationAsync(_connectionInfo.OrganizationId, new List<Permission> { write })
+                var authorizationCreated = createBucketClient.GetAuthorizationsApi()
+                    .CreateAuthorizationAsync(authorization)
                     .GetAwaiter().GetResult();
-                token = authorization?.Token;
+                token = authorizationCreated?.Token;
             }
             catch (HttpException ex)
             {

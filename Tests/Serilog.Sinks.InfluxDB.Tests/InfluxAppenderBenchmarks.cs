@@ -45,7 +45,6 @@ namespace Serilog.Sinks.InfluxDB.Tests
         public void LogSomethingInfluxWithLayoutInterp() => Log.Error($"Error Console{N}");
     }
 
-    [ExcludeFromCodeCoverage]
     public class InfluxAppenderBenchmarkTests : IDisposable
     {
         private bool disposedValue;
