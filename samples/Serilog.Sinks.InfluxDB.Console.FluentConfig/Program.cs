@@ -118,6 +118,14 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
                 })
                 .CreateLogger();
 
+            // Simple config
+            //Log.Logger = new LoggerConfiguration()
+            //    .WriteTo.InfluxDB(applicationName: "Quick test",
+            //                    uri: new Uri("http://127.0.0.1:8086"),
+            //                    organizationId: "88e1f5a5ad074d9e",  // Organization Id - unique id can be found under Profile > About > Common Ids)
+            //                    bucketName: "logs",
+            //                    token: "bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==")
+            //    .CreateLogger();
 
             for (var i = 0; i < options.Number; ++i)
             {

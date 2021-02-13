@@ -2,11 +2,9 @@
 A serilog sink that writes events to [InfluxDB](https://www.influxdata.com/) in syslog message format as described on the [Influx blog](https://www.influxdata.com/blog/writing-logs-directly-to-influxdb/).
 Supports platforms compatible with the [.NET Platform Standard](https://docs.microsoft.com/en-us/dotnet/standard/net-standard) `netstandard2.0`.
 
-Compatible with InfluxDB v1.X.X. 
+Compatible with InfluxDB v2.0
 
-**TODO UPDATE!!!**
-
-_NOTE: The **library will probably new dependencies for next release** in order to support InfluxDB v2.X.X
+**Warning:** Use library versions prior 2.0 for compatibility with influxdb v1.X
 
 ### Getting Started 
 
@@ -22,18 +20,21 @@ OR
 $ dotnet add package Serilog.Sinks.InfluxDB.Syslog
 ```
 
-If running locally for development purpose, you can use *docker-compose.yml* at root of this repository and adapt volumes if needed
+If running locally for development purpose, you can use *docker-compose-v2.yml* (or *docker-compose.yml* for v1) at root of this repository and adapt volumes if needed
 ```
-$ docker-compose -f docker-compose.yml up -d
+$ docker-compose -f docker-compose-v2.yml up -d
 ```
 
 Point the logger to InfluxDb (quickest way using default *_internal* database):
 
 ```csharp
-Log.Logger = new LoggerConfiguration()    
-    .WriteTo.InfluxDB(
-        applicationName: "Quick Test", 
-        uri : new Uri("http://127.0.0.1:8086"));
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.InfluxDB(applicationName: "Quick test",
+                    uri: new Uri("http://127.0.0.1:8086"),
+                    organizationId: "88e1f5a5ad074d9e",  // Organization Id - unique id can be found under Profile > About > Common Ids)
+                    bucketName: "logs",
+                    token: "bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==")
+    .CreateLogger();
 ```
 
 Another sample using *InfluxDBSinkOptions* for more control over periodic batching options and connection information:
@@ -42,12 +43,19 @@ Another sample using *InfluxDBSinkOptions* for more control over periodic batchi
 Log.Logger = new LoggerConfiguration()
     .WriteTo.InfluxDB(new InfluxDBSinkOptions()
     {
-        ApplicationName = "fluentSample",               // Application Name
-        InstanceName = "fluentSampleInstance",          // Instance or Environment Name
-        ConnectionInfo = new InfluxDBConnectionInfo()   // Connection Details
+        ApplicationName = "fluentSample",
+        InstanceName = "fluentSampleInstance",
+        ConnectionInfo = new InfluxDBConnectionInfo()
         {
             Uri = new Uri("http://127.0.0.1:8086"),
-            DbName = "_internal",
+            BucketName = "logs",
+            OrganizationId = "88e1f5a5ad074d9e",  // Organization Id - unique id can be found under Profile > About > Common Ids
+            // To be set if bucket already created and give write permission and set CreateBucketIfNotExists to false
+            Token = null,
+            CreateBucketIfNotExists = true,
+            //To specify if Bucket needs to be created and if token not known or without all access permissions
+            AllAccessToken = "bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==",
+            BucketRetentionPeriod = TimeSpan.FromDays(1)
         },
         BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
         {
@@ -73,30 +81,31 @@ If using `appsettings.json` for configuration the following example illustrates 
             "System": "Warning"
           }
         },
-        "WriteTo": [
-          { "Name": "Console" },
-          {
-            "Name": "InfluxDB",
-            "Args": {
-              "sinkOptions": {
-                "applicationName": "testApp",
-                "instanceName": "testInstance",
-                "ConnectionInfo": {
-                  "Uri": "http://localhost:8086",
-                  "DbName": "_internal",
-                  "Username": "",
-                  "Password": ""
-                },
-                "BatchOptions": {
-                  "EagerlyEmitFirstEvent": true,
-                  "BatchSizeLimit": 200,
-                  "Period": "0.00:00:30",
-                  "QueueLimit":  null
-                }
+        "WriteTo:Influx": {
+          "Name": "InfluxDB",
+          "Args": {
+            "sinkOptions": {
+              "ApplicationName": "testApp",
+              "InstanceName": "testInstance",
+              "ConnectionInfo": {
+                "Uri": "http://localhost:8086",
+                "BucketName": "logs",
+                "OrganizationId": "88e1f5a5ad074d9e",
+                "Token": "edBlcWgLkoPOituD_6V1ftCznpDR8niFcF46MJCSYuSxc1FM_srm9cuoc84yX5kOjOH_11Zvxk_juqr44S-57A==",
+                "CreateBucketIfNotExists": false 
+                //"Username": "influxdbroot",
+                //"Password": "TBD"
+                "BucketRetentionPeriod": "7.00:00:00",
+              },
+              "BatchOptions": {
+                "EagerlyEmitFirstEvent": true,
+                "BatchSizeLimit": 100,
+                "Period": "0.00:00:30",
+                "QueueLimit": 1000000
               }
             }
           }
-        ],
+        },
         "Properties": {
             "Application": "Serilog Sink InfluxDb Console Sample"
         }
