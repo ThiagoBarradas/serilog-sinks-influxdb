@@ -26,7 +26,7 @@ namespace Serilog.Sinks.InfluxDB.Tests
                     ConnectionInfo = new InfluxDBConnectionInfo()
                     {
                         Uri = new Uri("http://127.0.0.1:8086"),
-                        DbName = "_internal",
+                        BucketName = "_internal",
                     },
                     BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
                     {
@@ -45,7 +45,6 @@ namespace Serilog.Sinks.InfluxDB.Tests
         public void LogSomethingInfluxWithLayoutInterp() => Log.Error($"Error Console{N}");
     }
 
-    [ExcludeFromCodeCoverage]
     public class InfluxAppenderBenchmarkTests : IDisposable
     {
         private bool disposedValue;
@@ -101,7 +100,7 @@ namespace Serilog.Sinks.InfluxDB.Tests
                         ConnectionInfo = new InfluxDBConnectionInfo()
                         {
                             Uri = new Uri("http://127.0.0.1:8086"),
-                            DbName = "_internal",
+                            BucketName = "_internal",
                         },
                         BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
                         {

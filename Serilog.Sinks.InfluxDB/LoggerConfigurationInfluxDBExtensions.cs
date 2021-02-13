@@ -15,10 +15,10 @@ namespace Serilog
             this LoggerSinkConfiguration loggerConfiguration,
             string applicationName,
             string uriString,
-            string dbName = InfluxDBDefaults.DefaultDbName,
+            string organizationId,
+            string bucketName = InfluxDBDefaults.DefaultBucketName,
             string instanceName = null,
-            string username = null,
-            string password = null,
+            string token = null,            
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             PeriodicBatchingSinkOptions batchingOptions = null,
             IFormatProvider formatProvider = null)
@@ -26,8 +26,8 @@ namespace Serilog
             if (string.IsNullOrEmpty(uriString)) throw new ArgumentNullException(nameof(uriString));
             if (!Uri.TryCreate(uriString, UriKind.Absolute, out var _)) throw new ArgumentException($"Invalid uri : {uriString}");
 
-            return InfluxDB(loggerConfiguration, applicationName, new Uri(uriString), dbName, instanceName,
-                username, password, restrictedToMinimumLevel, batchingOptions, formatProvider);
+            return InfluxDB(loggerConfiguration, applicationName, new Uri(uriString), organizationId, bucketName, instanceName,
+                token, restrictedToMinimumLevel, batchingOptions, formatProvider);
         }
 
         /// <summary>
@@ -37,17 +37,17 @@ namespace Serilog
             this LoggerSinkConfiguration loggerConfiguration,
             string applicationName,
             Uri uri,
-            string dbName = InfluxDBDefaults.DefaultDbName,
+            string organizationId,
+            string bucketName = InfluxDBDefaults.DefaultBucketName,
             string instanceName = null,
-            string username = null,
-            string password = null,
+            string token = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             PeriodicBatchingSinkOptions batchingOptions = null,
             IFormatProvider formatProvider = null)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
             if (loggerConfiguration == null) throw new ArgumentNullException(nameof(loggerConfiguration));
-            if (string.IsNullOrEmpty(dbName)) throw new ArgumentException(nameof(dbName));
+            if (string.IsNullOrEmpty(bucketName)) throw new ArgumentException(nameof(bucketName));
 
             var sinkOptions = new InfluxDBSinkOptions()
             {
@@ -56,9 +56,9 @@ namespace Serilog
                 ConnectionInfo = new InfluxDBConnectionInfo
                 {
                     Uri = uri,
-                    DbName = dbName,
-                    Username = username,
-                    Password = password
+                    BucketName = bucketName,                    
+                    OrganizationId = organizationId,
+                    Token = token
                 },
                 BatchOptions = batchingOptions,
                 FormatProvider = formatProvider

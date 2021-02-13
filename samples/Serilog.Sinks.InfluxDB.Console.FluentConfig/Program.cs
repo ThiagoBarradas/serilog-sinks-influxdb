@@ -22,11 +22,18 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
             Log.Logger = new LoggerConfiguration()
                .MinimumLevel.Information()
                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-               .Enrich.FromLogContext()
-               .WriteTo.InfluxDB("Test App"      // Application Name
-                    , "http://localhost:8086"    // InfluxDb Address
-                )
+               .WriteTo.Console()
+               .Enrich.FromLogContext()               
+               //.WriteTo.InfluxDB("Test App"                     // Application Name
+               //     , "http://localhost:8086"                   // InfluxDb Address
+               //     , organizationId: "88e1f5a5ad074d9e"        // Organization Id - unique id can be found under Profile > About > Common Ids
+               //     , instanceName: "Test Instance"            // Instance or Environment Name
+               //     , bucketName: "logs"                       // InfluxDb Bucket Name
+               //     , token: "3KRZfuLM5xkJucRbudvMJIwaU-UAlqR5E18YFG-DMjgcKs9LQgZTAKLAEhj2poF-Ap6lLP0h7G7DwRfS33Wjkw=="
+               //)
                .CreateLogger();
+
+            Log.Information("Started sample Fluent Config :)");
 
             await BuildCommandLine()
             .UseHost(_ => Host.CreateDefaultBuilder(),
@@ -92,7 +99,14 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
                     ConnectionInfo = new InfluxDBConnectionInfo()
                     {
                         Uri = new Uri("http://127.0.0.1:8086"),
-                        DbName = "_internal",
+                        BucketName = "logs",
+                        OrganizationId = "88e1f5a5ad074d9e",  // Organization Id - unique id can be found under Profile > About > Common Ids
+                        // To be set if bucket already created and give write permission and set CreateBucketIfNotExists to false
+                        Token = null,
+                        CreateBucketIfNotExists = true,
+                        //To specify if Bucket needs to be created and if token not known or without all access permissions
+                        AllAccessToken = "bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==",
+                        BucketRetentionPeriod = TimeSpan.FromDays(1)
                     },
                     BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
                     {
@@ -104,10 +118,21 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
                 })
                 .CreateLogger();
 
+            // Simple config
+            //Log.Logger = new LoggerConfiguration()
+            //    .WriteTo.InfluxDB(applicationName: "Quick test",
+            //                    uri: new Uri("http://127.0.0.1:8086"),
+            //                    organizationId: "88e1f5a5ad074d9e",  // Organization Id - unique id can be found under Profile > About > Common Ids)
+            //                    bucketName: "logs",
+            //                    token: "bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==")
+            //    .CreateLogger();
+
             for (var i = 0; i < options.Number; ++i)
             {
                 Log.Information("Hello, InfluxDB logger!");
-                Log.Error("Error, InfluxDB logger!");
+                Log.Warning("Warning, could be worse");
+                Log.Error("Error, Oops what could have happened");
+                Log.Debug($"Debug: i -> {i}");
             }
 
             Log.CloseAndFlush();

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Serilog.Sinks.InfluxDB.Console.AppSettings": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "Serilog__WriteTo__Influx__Args__sinkOptions__InstanceName": "testInstance (local from env)"
+      }
+    }
+  }
+}

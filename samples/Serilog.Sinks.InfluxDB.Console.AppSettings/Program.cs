@@ -93,8 +93,10 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings
 
             for (var i = 0; i < options.Number; ++i)
             {
-                Log.Information("Hello, InfluxDB logger!");
-                Log.Error("Error, InfluxDB logger!");
+                Log.Information($"Hello, InfluxDB logger! i => {i}");
+                Log.Warning("Warning, what is it ?");
+                Log.Error($"Error, when ? {DateTime.Now}");
+                Log.Debug($"var i => {i}");
             }
 
             Log.CloseAndFlush();
