@@ -39,7 +39,7 @@ namespace Serilog.Sinks.InfluxDB.Tests
                         OrganizationId = "88e1f5a5ad074d9e",  // Organization Id - unique id can be found under Profile > About > Common Ids
                         CreateBucketIfNotExists = true,
                         //Username = "admin",
-                        //Password = "pwd",
+                        //Password = "admin",
                         AllAccessToken = "bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==",
                         BucketRetentionPeriod = TimeSpan.FromDays(1)
                     },

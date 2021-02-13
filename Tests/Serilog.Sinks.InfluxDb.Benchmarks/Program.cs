@@ -23,7 +23,13 @@ namespace Serilog.Sinks.InfluxDb.Benchmarks
                     ConnectionInfo = new InfluxDBConnectionInfo()
                     {
                         Uri = new Uri("http://127.0.0.1:8086"),
-                        BucketName = "_internal",
+                        BucketName = "logs",
+                        OrganizationId = "88e1f5a5ad074d9e",  // Organization Id - unique id can be found under Profile > About > Common Ids
+                        // To be set if bucket already created and give write permission and set CreateBucketIfNotExists to false
+                        Token = null,
+                        CreateBucketIfNotExists = true,
+                        //To specify if Bucket needs to be created and if token not known or without all access permissions
+                        AllAccessToken = "bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==",
                     },
                     BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
                     {
@@ -47,7 +53,6 @@ namespace Serilog.Sinks.InfluxDb.Benchmarks
         { }
         static void Main(string[] args)
         {
-            //TODO to retest
             var loggerConfig = new LoggerConfiguration()
                     .MinimumLevel.Information()
                     .WriteTo.InfluxDB(
@@ -55,7 +60,7 @@ namespace Serilog.Sinks.InfluxDb.Benchmarks
                         organizationId: "88e1f5a5ad074d9e",
                         bucketName:"logs",
                         uri : new Uri("http://127.0.0.1:8086"),
-                        token: "W7V1AXAdcMAlYr9wvYUI_1Q8PVYZBitBER75yt5T88UtYUX1f1-coLoIsK2SAnueYpf4hCraVDqjXVJaHPr3PA==");
+                        token: "bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==");
             var log = loggerConfig.CreateLogger();
 
             Console.WriteLine("Hello World!");
