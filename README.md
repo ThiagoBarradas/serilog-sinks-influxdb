@@ -8,6 +8,8 @@ Compatible with InfluxDB v2.0
 
 ### Getting Started 
 
+#### Version 2 (InfluxDB v2.X)
+
 To get started install the *Serilog.Sinks.InfluxDB.Syslog* package:
 
 ```powershell
@@ -20,7 +22,7 @@ OR
 $ dotnet add package Serilog.Sinks.InfluxDB.Syslog
 ```
 
-If running locally for development purpose, you can use *docker-compose-v2.yml* (or *docker-compose.yml* for v1) at root of this repository and adapt volumes if needed
+If running locally for development purpose, you can use *docker-compose-v2.yml* at root of this repository and adapt volumes if needed
 ```
 $ docker-compose -f docker-compose-v2.yml up -d
 ```
@@ -115,6 +117,101 @@ If using `appsettings.json` for configuration the following example illustrates 
 
 All those samples can be found under project subdirectory *samples* of this repository.
 
+#### Version 1 (InfluxDB v1.X)
+
+To get started install the *Serilog.Sinks.InfluxDB.Syslog* package:
+
+```powershell
+PM> Install-Package Serilog.Sinks.InfluxDB.Syslog -Version 1.3.1
+```
+
+OR
+
+```bash
+$ dotnet add package Serilog.Sinks.InfluxDB.Syslog --version 1.3.1
+```
+
+If running locally for development purpose, you can use *docker-compose.yml* at root of this repository and adapt volumes if needed
+```
+$ docker-compose -f docker-compose.yml up -d
+```
+
+Point the logger to InfluxDb (quickest way using default *_internal* database):
+
+```csharp
+Log.Logger = new LoggerConfiguration()    
+    .WriteTo.InfluxDB(
+        applicationName: "Quick Test", 
+        uri : new Uri("http://127.0.0.1:8086"));
+```
+
+Another sample using *InfluxDBSinkOptions* for more control over periodic batching options and connection information:
+
+```csharp
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.InfluxDB(new InfluxDBSinkOptions()
+    {
+        ApplicationName = "fluentSample",               // Application Name
+        InstanceName = "fluentSampleInstance",          // Instance or Environment Name
+        ConnectionInfo = new InfluxDBConnectionInfo()   // Connection Details
+        {
+            Uri = new Uri("http://127.0.0.1:8086"),
+            DbName = "_internal",
+        },
+        BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
+        {
+            BatchSizeLimit = 50,
+            Period = TimeSpan.FromSeconds(10),
+            EagerlyEmitFirstEvent = true,
+            QueueLimit = null
+        }
+    })
+    .CreateLogger();
+```
+
+If using `appsettings.json` for configuration the following example illustrates using InfluxDb and Console sinks.
+
+```javascript
+{
+    "Serilog": {
+        "Using": ["Serilog.Sinks.Console", "Serilog.Sinks.InfluxDB.Syslog"],
+        "MinimumLevel": {
+          "Default": "Information",
+          "Override": {
+            "Microsoft": "Warning",
+            "System": "Warning"
+          }
+        },
+        "WriteTo": [
+          { "Name": "Console" },
+          {
+            "Name": "InfluxDB",
+            "Args": {
+              "sinkOptions": {
+                "applicationName": "testApp",
+                "instanceName": "testInstance",
+                "ConnectionInfo": {
+                  "Uri": "http://localhost:8086",
+                  "DbName": "_internal",
+                  "Username": "",
+                  "Password": ""
+                },
+                "BatchOptions": {
+                  "EagerlyEmitFirstEvent": true,
+                  "BatchSizeLimit": 200,
+                  "Period": "0.00:00:30",
+                  "QueueLimit":  null
+                }
+              }
+            }
+          }
+        ],
+        "Properties": {
+            "Application": "Serilog Sink InfluxDb Console Sample"
+        }
+    }
+}
+```
 
 ### Build Status
 
