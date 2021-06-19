@@ -13,8 +13,10 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <RepositoryUrl>https://github.com/pada57/serilog-sinks-influxdb</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Version>2.0.1</Version>
-    <PackageReleaseNotes>2.0.1:
+    <Version>2.0.2</Version>
+    <PackageReleaseNotes>2.0.2:
+- Update nuget dependencies including InfluxDB.Client
+2.0.1:
 - Update nuget dependencies including InfluxDB.Client
 2.0: Support for InfluxDB v2, not compatible with v1
 - Change main dependency from InfluxData.Net to InfluxDB.Client
@@ -44,8 +46,8 @@
 - Adaption for syslog format
 - Fix 400 errors due to invalid characters with JSON payload
 </PackageReleaseNotes>
-    <AssemblyVersion>2.0.1.0</AssemblyVersion>
-    <FileVersion>2.0.1.0</FileVersion>
+    <AssemblyVersion>2.0.2.0</AssemblyVersion>
+    <FileVersion>2.0.2.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
