@@ -22,6 +22,7 @@
             internal static readonly string Severity = "severity_code";
             internal static readonly string Timestamp = "timestamp";
             internal static readonly string Version = "version";
+            internal static readonly string Exception = "exception";
 
             internal static class Values
             {
