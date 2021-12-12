@@ -21,13 +21,14 @@ namespace Serilog
             string token = null,            
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             PeriodicBatchingSinkOptions batchingOptions = null,
-            IFormatProvider formatProvider = null)
+            IFormatProvider formatProvider = null,
+            bool includeFullException = true)
         {
             if (string.IsNullOrEmpty(uriString)) throw new ArgumentNullException(nameof(uriString));
             if (!Uri.TryCreate(uriString, UriKind.Absolute, out var _)) throw new ArgumentException($"Invalid uri : {uriString}");
 
             return InfluxDB(loggerConfiguration, applicationName, new Uri(uriString), organizationId, bucketName, instanceName,
-                token, restrictedToMinimumLevel, batchingOptions, formatProvider);
+                token, restrictedToMinimumLevel, batchingOptions, formatProvider, includeFullException);
         }
 
         /// <summary>
@@ -43,7 +44,8 @@ namespace Serilog
             string token = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             PeriodicBatchingSinkOptions batchingOptions = null,
-            IFormatProvider formatProvider = null)
+            IFormatProvider formatProvider = null,
+            bool includeFullException = false)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
             if (loggerConfiguration == null) throw new ArgumentNullException(nameof(loggerConfiguration));
@@ -61,7 +63,8 @@ namespace Serilog
                     Token = token
                 },
                 BatchOptions = batchingOptions,
-                FormatProvider = formatProvider
+                FormatProvider = formatProvider,
+                IncludeFullException = includeFullException
             };
 
             return InfluxDB(loggerConfiguration, sinkOptions, restrictedToMinimumLevel);
