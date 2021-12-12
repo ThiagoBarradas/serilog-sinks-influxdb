@@ -57,7 +57,7 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
                     {
                         //add some defaults from config
                         var number = configuration.GetSection("Sample").GetValue<int>("number");
-                        args = new string[0];
+                        args = Array.Empty<string>();
                         args = args.Append($"-n {number}").ToArray();
                     }
 
@@ -97,15 +97,15 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
                     ApplicationName = "fluentSample",
                     InstanceName = "fluentSampleInstance",
                     ConnectionInfo = new InfluxDBConnectionInfo()
-                    {
-                        Uri = new Uri("http://127.0.0.1:8086"),
+                    {                        
+                        Uri = new Uri("http://localhost:8086"),
                         BucketName = "logs",
-                        OrganizationId = "88e1f5a5ad074d9e",  // Organization Id - unique id can be found under Profile > About > Common Ids
+                        OrganizationId = "76698537685b4527",  // Organization Id - unique id can be found under Profile > About > Common Ids
                         // To be set if bucket already created and give write permission and set CreateBucketIfNotExists to false
                         Token = null,
                         CreateBucketIfNotExists = true,
                         //To specify if Bucket needs to be created and if token not known or without all access permissions
-                        AllAccessToken = "bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==",
+                        AllAccessToken = "fGXiRVaWmwUO0pbT9CClG3qWHJa4Sio1IQPuyEsUOTq9T0hKDVabrgDzq_Np70y1UnmbzkRddvfU65eb7z0pJQ==",
                         BucketRetentionPeriod = TimeSpan.FromDays(1)
                     },
                     BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
@@ -114,7 +114,8 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
                         Period = TimeSpan.FromSeconds(10),
                         EagerlyEmitFirstEvent = true,
                         QueueLimit = null
-                    }
+                    },
+                    IncludeFullException = true
                 })
                 .CreateLogger();
 
@@ -132,6 +133,7 @@ namespace Serilog.Sinks.InfluxDB.Console.FluentConfig
                 Log.Information("Hello, InfluxDB logger!");
                 Log.Warning("Warning, could be worse");
                 Log.Error("Error, Oops what could have happened");
+                Log.Error(new NullReferenceException("Something was null damn it"), "Error, with exception details see exception field");
                 Log.Debug($"Debug: i -> {i}");
             }
 

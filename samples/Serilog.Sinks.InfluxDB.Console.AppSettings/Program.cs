@@ -52,7 +52,7 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings
                     {
                     //add some defaults from config
                     var number = configuration.GetSection("Sample").GetValue<int>("number");
-                        args = new string[0];
+                        args = Array.Empty<string>();
                         args = args.Append($"-n {number}").ToArray();
                     }
 

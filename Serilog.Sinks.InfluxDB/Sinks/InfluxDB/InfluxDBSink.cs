@@ -70,7 +70,7 @@ namespace Serilog.Sinks.InfluxDB
             _instanceName = options.InstanceName ?? _applicationName;
             _formatProvider = options.FormatProvider;
 
-            _includeFullException = options.IncludeFullException;
+            _includeFullException = options.IncludeFullException ?? false;
 
             CreateBucketIfNotExists();
 
@@ -240,15 +240,14 @@ namespace Serilog.Sinks.InfluxDB
         {
             var resource = new PermissionResource { Id = bucket.Id, OrgID = _connectionInfo.OrganizationId, Type = PermissionResource.TypeEnum.Buckets };
 
-            var write = new Permission(Permission.ActionEnum.Write, resource);
-            var authorization = new Authorization(_connectionInfo.OrganizationId, new List<Permission> { write }, description: $"{nameof(Permission.ActionEnum.Write)} Token for Bucket '{bucket.Name}' (Serilog)");
-
+            var write = new Permission(Permission.ActionEnum.Write, resource);            
+            var authorizationRequest = new AuthorizationPostRequest(_connectionInfo.OrganizationId, permissions: new List<Permission> { write }, description: $"{nameof(Permission.ActionEnum.Write)} Token for Bucket '{bucket.Name}' (Serilog)");
             string token;
 
             try
             {
                 var authorizationCreated = createBucketClient.GetAuthorizationsApi()
-                    .CreateAuthorizationAsync(authorization)
+                    .CreateAuthorizationAsync(authorizationRequest)
                     .GetAwaiter().GetResult();
                 token = authorizationCreated?.Token;
             }

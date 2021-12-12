@@ -8,8 +8,8 @@ namespace Serilog.Sinks.InfluxDB
         public string ApplicationName { get; set; }
 
         public string InstanceName { get; set; }
-        
-        public bool IncludeFullException { get; set; }
+
+        public bool? IncludeFullException { get; set; } = false;
 
         public InfluxDBConnectionInfo ConnectionInfo { get; set; } = new InfluxDBConnectionInfo();
 
