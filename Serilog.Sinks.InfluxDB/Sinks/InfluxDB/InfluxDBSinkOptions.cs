@@ -17,5 +17,10 @@ namespace Serilog.Sinks.InfluxDB
 
         public IFormatProvider FormatProvider { get; set; } = null;
 
+        public string[] ExtendedTags { get; set; }
+
+        public string[] ExtendedFields { get; set; }
+
+
     }
 }

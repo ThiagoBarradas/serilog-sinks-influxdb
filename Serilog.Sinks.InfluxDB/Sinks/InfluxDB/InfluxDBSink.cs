@@ -18,7 +18,9 @@ namespace Serilog.Sinks.InfluxDB
     {
         private readonly string _applicationName;
         private readonly string _instanceName;
-        
+        private readonly string[] _extendedTags;
+        private readonly string[] _extendedFields;
+
         private readonly bool _includeFullException;
 
         private readonly IFormatProvider _formatProvider;
@@ -75,6 +77,12 @@ namespace Serilog.Sinks.InfluxDB
             CreateBucketIfNotExists();
 
             _influxDbClient = CreateInfluxDbClientWithWriteAccess();
+
+            _extendedFields = options.ExtendedFields ?? Array.Empty<string>();
+
+            _extendedTags = options.ExtendedTags ?? Array.Empty<string>();
+
+
         }
 
         /// <inheritdoc />
@@ -84,6 +92,7 @@ namespace Serilog.Sinks.InfluxDB
         /// <param name="events">The events to emit.</param>
         public Task EmitBatchAsync(IEnumerable<Events.LogEvent> batch)
         {
+            
             if (batch == null) throw new ArgumentNullException(nameof(batch));
 
             var logEvents = batch as List<Events.LogEvent> ?? batch.ToList();
@@ -106,6 +115,23 @@ namespace Serilog.Sinks.InfluxDB
                     .Field(Fields.Timestamp, logEvent.Timestamp.ToUnixTimeMilliseconds() * 1000000)
                     .Field(Fields.Version, Fields.Values.Version)
                     .Timestamp(logEvent.Timestamp.UtcDateTime, WritePrecision.Ms);
+
+                foreach (var extendedTag in _extendedTags)
+                {
+                    if (logEvent.Properties.ContainsKey(extendedTag))
+                    {
+                        p = p.Tag(extendedTag, logEvent.Properties[extendedTag].ToString());
+                    }
+                }
+
+                foreach (var extendedField in _extendedFields)
+                {
+                    if (logEvent.Properties.ContainsKey(extendedField))
+                    {
+                        p = p.Field("releasenumber", logEvent.Properties[extendedField].ToString());
+                    }
+                }
+
 
                 if (logEvent.Exception != null) p = p.Tag(Tags.ExceptionType, logEvent.Exception.GetType().Name);
 
@@ -240,7 +266,7 @@ namespace Serilog.Sinks.InfluxDB
         {
             var resource = new PermissionResource { Id = bucket.Id, OrgID = _connectionInfo.OrganizationId, Type = PermissionResource.TypeEnum.Buckets };
 
-            var write = new Permission(Permission.ActionEnum.Write, resource);            
+            var write = new Permission(Permission.ActionEnum.Write, resource);
             var authorizationRequest = new AuthorizationPostRequest(_connectionInfo.OrganizationId, permissions: new List<Permission> { write }, description: $"{nameof(Permission.ActionEnum.Write)} Token for Bucket '{bucket.Name}' (Serilog)");
             string token;
 
