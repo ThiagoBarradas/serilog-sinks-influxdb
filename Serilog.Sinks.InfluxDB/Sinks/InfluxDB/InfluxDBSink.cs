@@ -128,7 +128,7 @@ namespace Serilog.Sinks.InfluxDB
                 {
                     if (logEvent.Properties.ContainsKey(extendedField))
                     {
-                        p = p.Field("releasenumber", logEvent.Properties[extendedField].ToString());
+                        p = p.Field(extendedField, logEvent.Properties[extendedField].ToString());
                     }
                 }
 
