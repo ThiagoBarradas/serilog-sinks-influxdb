@@ -35,7 +35,8 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings
                 SelfLog.Enable(System.Console.Out);
                 host.UseSerilog((hostingContext, loggerConfiguration) =>
                 {
-                    loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration);
+                    loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration)
+                     .Enrich.WithReleaseNumber();
                 })
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
