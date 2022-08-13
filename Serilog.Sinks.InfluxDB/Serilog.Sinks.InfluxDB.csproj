@@ -13,8 +13,10 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <RepositoryUrl>https://github.com/pada57/serilog-sinks-influxdb</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Version>2.1.1</Version>
+    <Version>2.1.2</Version>
     <PackageReleaseNotes>
+		2.1.2:
+		- Update nuget dependencies including InfluxDB.Client and Serilog
 		2.1.1:
 		- Update nuget dependencies including InfluxDB.Client and Serilog.Sinks.PeriodicBatching
 		2.1.0 (only for InfluxDB v2.XX):
@@ -57,13 +59,13 @@
 		- Adaption for syslog format
 		- Fix 400 errors due to invalid characters with JSON payload
 	</PackageReleaseNotes>
-    <AssemblyVersion>2.1.1.0</AssemblyVersion>
-    <FileVersion>2.1.1.0</FileVersion>
+    <AssemblyVersion>2.1.2.0</AssemblyVersion>
+    <FileVersion>2.1.2.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="InfluxDB.Client" Version="3.3.0" />
-    <PackageReference Include="Serilog" Version="2.10.0" />
+    <PackageReference Include="InfluxDB.Client" Version="4.4.0" />
+    <PackageReference Include="Serilog" Version="2.11.0" />
     <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="2.3.1" />
   </ItemGroup>
 

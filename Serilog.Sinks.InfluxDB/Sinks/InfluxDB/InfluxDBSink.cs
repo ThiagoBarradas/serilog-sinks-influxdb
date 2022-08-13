@@ -118,7 +118,7 @@ namespace Serilog.Sinks.InfluxDB
             // -> no async and let base class do the work for waiting
             return _influxDbClient
                     .GetWriteApiAsync()
-                    .WritePointsAsync(_connectionInfo.BucketName, _connectionInfo.OrganizationId, points);
+                    .WritePointsAsync(points, _connectionInfo.BucketName, _connectionInfo.OrganizationId);
         }
 
         public Task OnEmptyBatchAsync() => Task.CompletedTask;
@@ -238,7 +238,7 @@ namespace Serilog.Sinks.InfluxDB
 
         private string GenerateWriteToken(InfluxDBClient createBucketClient, Bucket bucket)
         {
-            var resource = new PermissionResource { Id = bucket.Id, OrgID = _connectionInfo.OrganizationId, Type = PermissionResource.TypeEnum.Buckets };
+            var resource = new PermissionResource { Id = bucket.Id, OrgID = _connectionInfo.OrganizationId, Type = PermissionResource.TypeBuckets };
 
             var write = new Permission(Permission.ActionEnum.Write, resource);            
             var authorizationRequest = new AuthorizationPostRequest(_connectionInfo.OrganizationId, permissions: new List<Permission> { write }, description: $"{nameof(Permission.ActionEnum.Write)} Token for Bucket '{bucket.Name}' (Serilog)");
