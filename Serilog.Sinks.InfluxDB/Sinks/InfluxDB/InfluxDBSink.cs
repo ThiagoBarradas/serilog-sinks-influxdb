@@ -18,7 +18,9 @@ namespace Serilog.Sinks.InfluxDB
     {
         private readonly string _applicationName;
         private readonly string _instanceName;
-        
+        private readonly string[] _extendedTags;
+        private readonly string[] _extendedFields;
+
         private readonly bool _includeFullException;
 
         private readonly IFormatProvider _formatProvider;
@@ -75,6 +77,10 @@ namespace Serilog.Sinks.InfluxDB
             CreateBucketIfNotExists();
 
             _influxDbClient = CreateInfluxDbClientWithWriteAccess();
+
+            _extendedFields = options.ExtendedFields ?? Array.Empty<string>();
+
+            _extendedTags = options.ExtendedTags ?? Array.Empty<string>();
         }
 
         /// <inheritdoc />
@@ -106,6 +112,10 @@ namespace Serilog.Sinks.InfluxDB
                     .Field(Fields.Timestamp, logEvent.Timestamp.ToUnixTimeMilliseconds() * 1000000)
                     .Field(Fields.Version, Fields.Values.Version)
                     .Timestamp(logEvent.Timestamp.UtcDateTime, WritePrecision.Ms);
+
+                p = p.ExtendTags(logEvent, _extendedTags);
+
+                p = p.ExtendFields(logEvent, _extendedFields);
 
                 if (logEvent.Exception != null) p = p.Tag(Tags.ExceptionType, logEvent.Exception.GetType().Name);
 
