@@ -98,7 +98,7 @@ namespace Serilog.Sinks.InfluxDB
             foreach (var logEvent in logEvents)
             {
                 var severity = logEvent.Level.ToSeverity();
-                
+
                 var p = PointData.Builder.Measurement(PointName)
                     .Tag(Tags.Level, logEvent.Level.ToString())
                     .Tag(Tags.AppName, _applicationName)
@@ -248,7 +248,7 @@ namespace Serilog.Sinks.InfluxDB
         {
             var resource = new PermissionResource { Id = bucket.Id, OrgID = _connectionInfo.OrganizationId, Type = PermissionResource.TypeBuckets };
 
-            var write = new Permission(Permission.ActionEnum.Write, resource);            
+            var write = new Permission(Permission.ActionEnum.Write, resource);
             var authorizationRequest = new AuthorizationPostRequest(_connectionInfo.OrganizationId, permissions: new List<Permission> { write }, description: $"{nameof(Permission.ActionEnum.Write)} Token for Bucket '{bucket.Name}' (Serilog)");
             string token;
 

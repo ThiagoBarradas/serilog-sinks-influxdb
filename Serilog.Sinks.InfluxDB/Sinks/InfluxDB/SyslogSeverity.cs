@@ -18,7 +18,7 @@ namespace Serilog.Sinks.InfluxDB
     {
         public static SyslogSeverity ToSeverity(this LogEventLevel logEventLevel)
         {
-            switch(logEventLevel)
+            switch (logEventLevel)
             {
                 case LogEventLevel.Error: return SyslogSeverity.err;
                 case LogEventLevel.Information: return SyslogSeverity.info;

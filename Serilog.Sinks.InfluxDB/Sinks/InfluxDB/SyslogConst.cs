@@ -28,7 +28,7 @@
             {
                 internal static readonly int Facility = 16;
                 internal static readonly int Version = 1;
-            }            
+            }
         }
     }
 }

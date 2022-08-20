@@ -1,17 +1,16 @@
 ﻿using Serilog.Configuration;
 using System;
 
-namespace Serilog.Sinks.InfluxDB.Console.AppSettings
-{
-    public static class LoggingExtensions
-    {
-        public static LoggerConfiguration WithReleaseNumber(
-            this LoggerEnrichmentConfiguration enrich)
-        {
-            if (enrich is null)
-                throw new ArgumentNullException(nameof(enrich));
+namespace Serilog.Sinks.InfluxDB.Console.AppSettings;
 
-            return enrich.With<ReleaseNumberEnricher>();
-        }
+public static class LoggingExtensions
+{
+    public static LoggerConfiguration WithReleaseNumber(
+        this LoggerEnrichmentConfiguration enrich)
+    {
+        if (enrich is null)
+            throw new ArgumentNullException(nameof(enrich));
+
+        return enrich.With<ReleaseNumberEnricher>();
     }
 }

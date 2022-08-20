@@ -4,20 +4,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Serilog.Sinks.InfluxDB.Console.AppSettings
-{
-    public class SampleOptions
-    {
-        public const string Sample = "Sample";
-        public int Number { get; }
-        public SampleOptions(int number)
-        {
-            Number = number;
-        }
+namespace Serilog.Sinks.InfluxDB.Console.AppSettings;
 
-        public SampleOptions()
-        {
-            Number = 10000;
-        }
+public class SampleOptions
+{
+    public const string Sample = "Sample";
+    public int Number { get; }
+    public SampleOptions(int number)
+    {
+        Number = number;
+    }
+
+    public SampleOptions()
+    {
+        Number = 10000;
     }
 }

@@ -18,7 +18,7 @@ namespace Serilog
             string organizationId,
             string bucketName = InfluxDBDefaults.DefaultBucketName,
             string instanceName = null,
-            string token = null,            
+            string token = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             PeriodicBatchingSinkOptions batchingOptions = null,
             IFormatProvider formatProvider = null,
@@ -58,7 +58,7 @@ namespace Serilog
                 ConnectionInfo = new InfluxDBConnectionInfo
                 {
                     Uri = uri,
-                    BucketName = bucketName,                    
+                    BucketName = bucketName,
                     OrganizationId = organizationId,
                     Token = token
                 },

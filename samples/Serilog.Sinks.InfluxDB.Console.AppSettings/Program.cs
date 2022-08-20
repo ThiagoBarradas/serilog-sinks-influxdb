@@ -13,101 +13,100 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Serilog.Sinks.InfluxDB.Console.AppSettings
+namespace Serilog.Sinks.InfluxDB.Console.AppSettings;
+
+class Program
 {
-    class Program
+    public static IConfiguration Configuration { get; } = new ConfigurationBuilder()
+        .SetBasePath(Directory.GetCurrentDirectory())
+        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+        .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
+        .AddUserSecrets<Program>()
+        .AddEnvironmentVariables()
+        .Build();
+
+
+    static async Task Main(string[] args)
     {
-        public static IConfiguration Configuration { get; } = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
-            .AddUserSecrets<Program>()
-            .AddEnvironmentVariables()
-            .Build();
-
-
-        static async Task Main(string[] args)
+        await BuildCommandLine()
+        .UseHost(_ => Host.CreateDefaultBuilder(),
+        host =>
         {
-            await BuildCommandLine()
-            .UseHost(_ => Host.CreateDefaultBuilder(),
-            host =>
+            SelfLog.Enable(System.Console.Out);
+            host.UseSerilog((hostingContext, loggerConfiguration) =>
             {
-                SelfLog.Enable(System.Console.Out);
-                host.UseSerilog((hostingContext, loggerConfiguration) =>
-                {
-                    loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration)
-                     .Enrich.WithReleaseNumber();
-                })
-                .ConfigureAppConfiguration((hostingContext, config) =>
-                {
-                    config.Sources.Clear();
-                    config.AddConfiguration(Configuration);
-                    var configuration = config.Build();
+                loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration)
+                 .Enrich.WithReleaseNumber();
+            })
+            .ConfigureAppConfiguration((hostingContext, config) =>
+            {
+                config.Sources.Clear();
+                config.AddConfiguration(Configuration);
+                var configuration = config.Build();
 
-                    if(args is not null)
-                    {
-                        config.AddCommandLine(args);
-                    }
+                if (args is not null)
+                {
+                    config.AddCommandLine(args);
+                }
 
-                    if (args is null)
-                    {
+                if (args is null)
+                {
                     //add some defaults from config
                     var number = configuration.GetSection("Sample").GetValue<int>("number");
-                        args = Array.Empty<string>();
-                        args = args.Append($"-n {number}").ToArray();
-                    }
+                    args = Array.Empty<string>();
+                    args = args.Append($"-n {number}").ToArray();
+                }
 
-                    configuration = config.Build();
+                configuration = config.Build();
+            })
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddOptions<SampleOptions>()
+                 .Bind(hostContext.Configuration.GetSection(SampleOptions.Sample));
+
                 })
-                    .ConfigureServices((hostContext, services) =>
-                    {
-                        services.AddOptions<SampleOptions>()
-                     .Bind(hostContext.Configuration.GetSection(SampleOptions.Sample));
+                .ConfigureLogging((hostContext, logging) =>
+                {
+                    // nothing to do here as UseSerilog configures everything
+                }
+                );
+        })
+            .UseDefaults()
+            .Build()
+            .InvokeAsync(args);
+    }
 
-                    })
-                    .ConfigureLogging((hostContext, logging) =>
-                    {
-                        // nothing to do here as UseSerilog configures everything
-                    }
-                    );
-                })
-                .UseDefaults()
-                .Build()
-                .InvokeAsync(args);
-        }
+    private static CommandLineBuilder BuildCommandLine()
+    {
+        var root = new RootCommand(@"$ TestConsole.exe --number 10"){
+            new Option<int>(aliases: new string[] { "--number", "-n" }){
+                Description = "Number of log entries to create",
+                IsRequired = false
+            },
+        };
+        root.Handler = CommandHandler.Create<SampleOptions, IHost>(Run);
+        return new CommandLineBuilder(root);
+    }
 
-        private static CommandLineBuilder BuildCommandLine()
+    private static void Run(SampleOptions options, IHost host)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        for (var i = 0; i < options.Number; ++i)
         {
-            var root = new RootCommand(@"$ TestConsole.exe --number 10"){
-                new Option<int>(aliases: new string[] { "--number", "-n" }){
-                    Description = "Number of log entries to create",
-                    IsRequired = false
-                },
-            };
-            root.Handler = CommandHandler.Create<SampleOptions, IHost>(Run);
-            return new CommandLineBuilder(root);
+            Log.Information($"Hello, InfluxDB logger! i => {i}");
+            Log.Warning("Warning, what is it ?");
+            Log.Error($"Error, when ? {DateTime.Now}");
+            Log.Debug($"var i => {i}");
         }
 
-        private static void Run(SampleOptions options, IHost host)
-        {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
+        Log.CloseAndFlush();
 
-            for (var i = 0; i < options.Number; ++i)
-            {
-                Log.Information($"Hello, InfluxDB logger! i => {i}");
-                Log.Warning("Warning, what is it ?");
-                Log.Error($"Error, when ? {DateTime.Now}");
-                Log.Debug($"var i => {i}");
-            }
+        sw.Stop();
 
-            Log.CloseAndFlush();
+        System.Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds} ms");
 
-            sw.Stop();
-
-            System.Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds} ms");
-
-            System.Console.WriteLine("Press any key to exit...");
-            System.Console.ReadKey(true);
-        }
+        System.Console.WriteLine("Press any key to exit...");
+        System.Console.ReadKey(true);
     }
 }
