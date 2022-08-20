@@ -13,8 +13,10 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <RepositoryUrl>https://github.com/pada57/serilog-sinks-influxdb</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Version>2.1.2</Version>
+    <Version>2.2.0</Version>
     <PackageReleaseNotes>
+		2.2.0:
+		- Add support for Extended fields and Extended tags
 		2.1.2:
 		- Update nuget dependencies including InfluxDB.Client and Serilog
 		2.1.1:
@@ -59,8 +61,8 @@
 		- Adaption for syslog format
 		- Fix 400 errors due to invalid characters with JSON payload
 	</PackageReleaseNotes>
-    <AssemblyVersion>2.1.2.0</AssemblyVersion>
-    <FileVersion>2.1.2.0</FileVersion>
+    <AssemblyVersion>2.2.0.0</AssemblyVersion>
+    <FileVersion>2.2.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
