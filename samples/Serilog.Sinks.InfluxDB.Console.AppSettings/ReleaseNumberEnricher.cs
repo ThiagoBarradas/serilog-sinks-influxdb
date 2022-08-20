@@ -23,7 +23,7 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings
         private LogEventProperty GetLogEventProperty(ILogEventPropertyFactory propertyFactory)
         {
             // Don't care about thread-safety, in the worst case the field gets overwritten and one property will be GCed
-            if (_cachedProperty == null)
+            if (_cachedProperty is null)
                 _cachedProperty = CreateProperty(propertyFactory);
 
             return _cachedProperty;

@@ -50,7 +50,7 @@ namespace Serilog.Sinks.InfluxDB
         /// <param name="formatProvider"></param>
         public InfluxDBSink(InfluxDBSinkOptions options)
         {
-            if (options == null) throw new ArgumentNullException(nameof(options));
+            if (options is null) throw new ArgumentNullException(nameof(options));
 
             _connectionInfo = options.ConnectionInfo ?? throw new ArgumentNullException(nameof(options.ConnectionInfo));
             _applicationName = options.ApplicationName ?? throw new ArgumentNullException(nameof(options.ApplicationName));
@@ -90,7 +90,7 @@ namespace Serilog.Sinks.InfluxDB
         /// <param name="events">The events to emit.</param>
         public Task EmitBatchAsync(IEnumerable<Events.LogEvent> batch)
         {
-            if (batch == null) throw new ArgumentNullException(nameof(batch));
+            if (batch is null) throw new ArgumentNullException(nameof(batch));
 
             var logEvents = batch as List<Events.LogEvent> ?? batch.ToList();
             var points = new List<PointData>(logEvents.Count);
@@ -98,8 +98,8 @@ namespace Serilog.Sinks.InfluxDB
             foreach (var logEvent in logEvents)
             {
                 var severity = logEvent.Level.ToSeverity();
-
-                var p = PointData.Measurement(PointName)
+                
+                var p = PointData.Builder.Measurement(PointName)
                     .Tag(Tags.Level, logEvent.Level.ToString())
                     .Tag(Tags.AppName, _applicationName)
                     .Tag(Tags.Facility, _instanceName)
@@ -111,17 +111,15 @@ namespace Serilog.Sinks.InfluxDB
                     .Field(Fields.Severity, severity.ToString())
                     .Field(Fields.Timestamp, logEvent.Timestamp.ToUnixTimeMilliseconds() * 1000000)
                     .Field(Fields.Version, Fields.Values.Version)
-                    .Timestamp(logEvent.Timestamp.UtcDateTime, WritePrecision.Ms);
+                    .Timestamp(logEvent.Timestamp.UtcDateTime, WritePrecision.Ms)
+                    .ExtendTags(logEvent, _extendedTags)
+                    .ExtendFields(logEvent, _extendedFields);
 
-                p = p.ExtendTags(logEvent, _extendedTags);
+                if (logEvent.Exception != null) p.Tag(Tags.ExceptionType, logEvent.Exception.GetType().Name);
 
-                p = p.ExtendFields(logEvent, _extendedFields);
+                if (_includeFullException && logEvent.Exception != null) p.Field(Fields.Exception, logEvent.Exception.ToString());
 
-                if (logEvent.Exception != null) p = p.Tag(Tags.ExceptionType, logEvent.Exception.GetType().Name);
-
-                if (_includeFullException && logEvent.Exception != null) p = p.Field(Fields.Exception, logEvent.Exception.ToString());
-
-                points.Add(p);
+                points.Add(p.ToPointData());
             }
 
             //Not handling exceptions and let handle by wrapping class PeriodicBatchingSink            
@@ -201,7 +199,7 @@ namespace Serilog.Sinks.InfluxDB
             {
                 var bucket = GetBucketOrDefault(createBucketClient, _connectionInfo.BucketName);
 
-                if (bucket == null)
+                if (bucket is null)
                 {
                     var newBucket = CreateBucket(createBucketClient);
 

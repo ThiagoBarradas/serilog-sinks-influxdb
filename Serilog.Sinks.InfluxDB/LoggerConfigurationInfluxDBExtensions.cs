@@ -47,8 +47,8 @@ namespace Serilog
             IFormatProvider formatProvider = null,
             bool includeFullException = false)
         {
-            if (uri == null) throw new ArgumentNullException(nameof(uri));
-            if (loggerConfiguration == null) throw new ArgumentNullException(nameof(loggerConfiguration));
+            if (uri is null) throw new ArgumentNullException(nameof(uri));
+            if (loggerConfiguration is null) throw new ArgumentNullException(nameof(loggerConfiguration));
             if (string.IsNullOrEmpty(bucketName)) throw new ArgumentException(nameof(bucketName));
 
             var sinkOptions = new InfluxDBSinkOptions()
@@ -78,11 +78,11 @@ namespace Serilog
             InfluxDBSinkOptions sinkOptions,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
-            if (sinkOptions == null) throw new ArgumentNullException(nameof(sinkOptions));
+            if (sinkOptions is null) throw new ArgumentNullException(nameof(sinkOptions));
 
             var defaultOptions = new PeriodicBatchingSinkOptions();
 
-            if (sinkOptions.BatchOptions == null)
+            if (sinkOptions.BatchOptions is null)
             {
                 sinkOptions.BatchOptions = defaultOptions; // initialized with default from lib
             }
