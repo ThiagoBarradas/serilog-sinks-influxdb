@@ -3,6 +3,7 @@ on: [push, pull_request]
 
 env:
   DOTNET_NOLOGO: 1
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
 jobs:
   linux:
