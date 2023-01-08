@@ -21,6 +21,6 @@ public class QueryResult
     public DateTime Time { get; }
     public int Table { get; }
     public string Field { get; }
-    public object Value { get; }
+    public object Value { get; set; }
     public IDictionary<string, string?> Tags { get; }
 }

@@ -1,0 +1,85 @@
+﻿[
+  {
+    Time: DateTime_1,
+    Field: facility_code,
+    Value: 16,
+    Tags: {
+      _field: facility_code,
+      _measurement: syslog,
+      hostname: HOSTNAME,
+      level: Warning,
+      severity: warning,
+      SourceContext: Debug
+    }
+  },
+  {
+    Time: DateTime_1,
+    Table: 1,
+    Field: message,
+    Value: Some warning \"Some parameter\",
+    Tags: {
+      _field: message,
+      _measurement: syslog,
+      hostname: HOSTNAME,
+      level: Warning,
+      severity: warning,
+      SourceContext: Debug
+    }
+  },
+  {
+    Time: DateTime_1,
+    Table: 2,
+    Field: procid,
+    Value: PROCID,
+    Tags: {
+      _field: procid,
+      _measurement: syslog,
+      hostname: HOSTNAME,
+      level: Warning,
+      severity: warning,
+      SourceContext: Debug
+    }
+  },
+  {
+    Time: DateTime_1,
+    Table: 3,
+    Field: severity_code,
+    Value: warning,
+    Tags: {
+      _field: severity_code,
+      _measurement: syslog,
+      hostname: HOSTNAME,
+      level: Warning,
+      severity: warning,
+      SourceContext: Debug
+    }
+  },
+  {
+    Time: DateTime_1,
+    Table: 4,
+    Field: timestamp,
+    Value: TIMESTAMP,
+    Tags: {
+      _field: timestamp,
+      _measurement: syslog,
+      hostname: HOSTNAME,
+      level: Warning,
+      severity: warning,
+      SourceContext: Debug
+    }
+  },
+  {
+    Time: DateTime_1,
+    Table: 5,
+    Field: version,
+    Value: 1,
+    Tags: {
+      _field: version,
+      _measurement: syslog,
+      hostname: HOSTNAME,
+      level: Warning,
+      severity: warning,
+      SourceContext: Debug
+    }
+  }
+]
