@@ -43,8 +43,8 @@ namespace Serilog.Sinks.InfluxDB
         /// Construct a sink inserting into InfluxDB with the specified details.
         /// </summary>
         /// <param name="connectionInfo">Connection information used to construct InfluxDB client.</param>
-        /// <param name="applicationName">Application name in the InfluxDB bucket.</param>
-        /// <param name="instanceName">Facility name in the InfluxDB bucket.</param>
+        /// <param name="applicationName">[OPTIONAL] Application name in the InfluxDB bucket.</param>
+        /// <param name="instanceName">[OPTIONAL] Facility name in the InfluxDB bucket.</param>
         /// <param name="batchSizeLimit">The maximum number of events to post in a single batch.</param>
         /// <param name="period">The time to wait between checking for event batches.</param>
         /// <param name="formatProvider"></param>
@@ -53,7 +53,6 @@ namespace Serilog.Sinks.InfluxDB
             if (options is null) throw new ArgumentNullException(nameof(options));
 
             _connectionInfo = options.ConnectionInfo ?? throw new ArgumentNullException(nameof(options.ConnectionInfo));
-            _applicationName = options.ApplicationName;
 
             if (_connectionInfo.Uri is null) throw new ArgumentNullException(nameof(_connectionInfo.Uri));
             if (_connectionInfo.BucketName is null) throw new ArgumentNullException(nameof(_connectionInfo.BucketName));
@@ -69,6 +68,7 @@ namespace Serilog.Sinks.InfluxDB
             if (_authMethod == AuthMethods.Token && string.IsNullOrWhiteSpace(_connectionInfo.Token) && string.IsNullOrWhiteSpace(_connectionInfo.AllAccessToken) && string.IsNullOrWhiteSpace(_connectionInfo.Username))
                 throw new ArgumentNullException(nameof(_connectionInfo.Token), $"At least one Token should be given either {nameof(_connectionInfo.Token)} if already created with write permissions or {nameof(_connectionInfo.AllAccessToken)}");
 
+            _applicationName = options.ApplicationName;
             _instanceName = options.InstanceName ?? _applicationName;
             _formatProvider = options.FormatProvider;
 

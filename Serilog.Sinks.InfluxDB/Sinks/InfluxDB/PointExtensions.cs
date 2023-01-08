@@ -7,7 +7,7 @@ namespace Serilog.Sinks.InfluxDB
     {
         public static PointData.Builder OptionalTag(this PointData.Builder builder, string name, string value)
         {
-            if (!string.IsNullOrEmpty(value))
+            if (!string.IsNullOrWhiteSpace(value))
             {
                 builder.Tag(name, value);
             }
@@ -18,7 +18,7 @@ namespace Serilog.Sinks.InfluxDB
         {
             foreach (var extendedTag in tags)
             {
-                var (sourceName, targetName) = extendedTag.Parse();
+                var (sourceName, targetName) = SplitIfColumnPresent(extendedTag);
 
                 if (logEvent.Properties.TryGetValue(sourceName, out var propertyValue))
                 {
@@ -35,7 +35,7 @@ namespace Serilog.Sinks.InfluxDB
         {
             foreach (var extendedField in fields)
             {
-                var (sourceName, targetName) = extendedField.Parse();
+                var (sourceName, targetName) = extendedField.SplitIfColumnPresent();
 
                 if (logEvent.Properties.TryGetValue(sourceName, out var value))
                 {
@@ -84,7 +84,7 @@ namespace Serilog.Sinks.InfluxDB
             return builder;
         }
 
-        private static (string, string) Parse(this string value)
+        private static (string, string) SplitIfColumnPresent(this string value)
         {
             var i = value.IndexOf(':');
 

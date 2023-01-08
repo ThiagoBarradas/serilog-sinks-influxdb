@@ -33,6 +33,28 @@ namespace Serilog
 
         /// <summary>
         /// Adds the WriteTo.InfluxDB() extension method to <see cref="LoggerConfiguration"/>.
+        /// No application name and instance name will be defined as tag using this method.
+        /// </summary>
+        public static LoggerConfiguration InfluxDB(
+            this LoggerSinkConfiguration loggerConfiguration,
+            string uriString,
+            string organizationId,
+            string bucketName = InfluxDBDefaults.DefaultBucketName,
+            string token = null,
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+            PeriodicBatchingSinkOptions batchingOptions = null,
+            IFormatProvider formatProvider = null,
+            bool includeFullException = false)
+        {
+            if (string.IsNullOrEmpty(uriString)) throw new ArgumentNullException(nameof(uriString));
+            if (!Uri.TryCreate(uriString, UriKind.Absolute, out var _)) throw new ArgumentException($"Invalid uri : {uriString}");
+
+            return InfluxDB(loggerConfiguration, null, new Uri(uriString), organizationId, bucketName, null,
+                token, restrictedToMinimumLevel, batchingOptions, formatProvider, includeFullException);
+        }
+
+        /// <summary>
+        /// Adds the WriteTo.InfluxDB() extension method to <see cref="LoggerConfiguration"/>.
         /// </summary>
         public static LoggerConfiguration InfluxDB(
             this LoggerSinkConfiguration loggerConfiguration,
@@ -55,6 +77,42 @@ namespace Serilog
             {
                 ApplicationName = applicationName,
                 InstanceName = instanceName,
+                ConnectionInfo = new InfluxDBConnectionInfo
+                {
+                    Uri = uri,
+                    BucketName = bucketName,
+                    OrganizationId = organizationId,
+                    Token = token
+                },
+                BatchOptions = batchingOptions,
+                FormatProvider = formatProvider,
+                IncludeFullException = includeFullException
+            };
+
+            return InfluxDB(loggerConfiguration, sinkOptions, restrictedToMinimumLevel);
+        }
+
+        /// <summary>
+        /// Adds the WriteTo.InfluxDB() extension method to <see cref="LoggerConfiguration"/>.
+        /// No application name and instance name will be defined as tag using this method.
+        /// </summary>
+        public static LoggerConfiguration InfluxDB(
+            this LoggerSinkConfiguration loggerConfiguration,           
+            Uri uri,
+            string organizationId,
+            string bucketName = InfluxDBDefaults.DefaultBucketName,
+            string token = null,
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+            PeriodicBatchingSinkOptions batchingOptions = null,
+            IFormatProvider formatProvider = null,
+            bool includeFullException = false)
+        {
+            if (uri is null) throw new ArgumentNullException(nameof(uri));
+            if (loggerConfiguration is null) throw new ArgumentNullException(nameof(loggerConfiguration));
+            if (string.IsNullOrEmpty(bucketName)) throw new ArgumentException(nameof(bucketName));
+
+            var sinkOptions = new InfluxDBSinkOptions()
+            {
                 ConnectionInfo = new InfluxDBConnectionInfo
                 {
                     Uri = uri,
