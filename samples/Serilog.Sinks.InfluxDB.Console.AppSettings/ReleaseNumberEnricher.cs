@@ -6,7 +6,7 @@ namespace Serilog.Sinks.InfluxDB.Console.AppSettings;
 
 public class ReleaseNumberEnricher : ILogEventEnricher
 {
-    LogEventProperty _cachedProperty;
+    LogEventProperty? _cachedProperty;
 
     public const string PropertyName = "ReleaseNumber";
 

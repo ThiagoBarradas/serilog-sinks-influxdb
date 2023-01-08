@@ -1,97 +1,100 @@
 ﻿using InfluxDB.Client.Writes;
 using Serilog.Events;
 
-namespace Serilog.Sinks.InfluxDB
+namespace Serilog.Sinks.InfluxDB;
+
+static class PointDataExtensions
 {
-    static class PointDataExtensions
+    public static PointData.Builder OptionalTag(this PointData.Builder builder, string name, string? value)
     {
-        public static PointData.Builder OptionalTag(this PointData.Builder builder, string name, string value)
+        if (!string.IsNullOrWhiteSpace(value))
         {
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                builder.Tag(name, value);
-            }
+            builder.Tag(name, value);
+        }
+        return builder;
+    }
+
+    public static PointData.Builder ExtendTags(this PointData.Builder builder, LogEvent logEvent, string[]? tags)
+    {
+        if (tags == null)
             return builder;
+
+        foreach (var extendedTag in tags)
+        {
+            var (sourceName, targetName) = SplitIfColumnPresent(extendedTag);
+
+            if (!logEvent.Properties.TryGetValue(sourceName, out var propertyValue))
+                continue;
+
+            var value = (propertyValue is ScalarValue { Value: string text }) ? text : propertyValue.ToString();
+
+            builder.Tag(targetName, value);
         }
 
-        public static PointData.Builder ExtendTags(this PointData.Builder builder, Events.LogEvent logEvent, string[] tags)
+        return builder;
+    }
+
+    public static PointData.Builder ExtendFields(this PointData.Builder builder, LogEvent logEvent, string[]? fields)
+    {
+        if (fields == null)
+            return builder;
+
+        foreach (var extendedField in fields)
         {
-            foreach (var extendedTag in tags)
+            var (sourceName, targetName) = extendedField.SplitIfColumnPresent();
+
+            if (logEvent.Properties.TryGetValue(sourceName, out var value))
             {
-                var (sourceName, targetName) = SplitIfColumnPresent(extendedTag);
+                //TODO manage other types SequenceValue , StructureValue 
+                if (value is not ScalarValue sv)
+                    continue;
 
-                if (logEvent.Properties.TryGetValue(sourceName, out var propertyValue))
+                switch (sv.Value)
                 {
-                    var value = ((propertyValue is ScalarValue sv) && (sv.Value is string text)) ? text : propertyValue.ToString();
-
-                    builder.Tag(targetName, value);
+                    case bool bl:
+                        builder.Field(targetName, bl);
+                        break;
+                    case int i:
+                        builder.Field(targetName, i);
+                        break;
+                    case double db:
+                        builder.Field(targetName, db);
+                        break;
+                    case decimal dc:
+                        builder.Field(targetName, dc);
+                        break;
+                    case long l:
+                        builder.Field(targetName, l);
+                        break;
+                    case uint ui:
+                        builder.Field(targetName, ui);
+                        break;
+                    case ulong u:
+                        builder.Field(targetName, u);
+                        break;
+                    case byte b:
+                        builder.Field(targetName, b);
+                        break;
+                    case string s:
+                        builder.Field(targetName, s);
+                        break;
+                    default:
+                        builder.Field(targetName, value.ToString());
+                        break;
                 }
             }
-            return builder;
-
         }
 
-        public static PointData.Builder ExtendFields(this PointData.Builder builder, Events.LogEvent logEvent, string[] fields)
-        {
-            foreach (var extendedField in fields)
-            {
-                var (sourceName, targetName) = extendedField.SplitIfColumnPresent();
+        return builder;
+    }
 
-                if (logEvent.Properties.TryGetValue(sourceName, out var value))
-                {
-                    //TODO manage other types SequenceValue , StructureValue 
+    private static (string, string) SplitIfColumnPresent(this string value)
+    {
+        var i = value.IndexOf(':');
 
-                    if (!(value is ScalarValue sv))
-                        continue;
+        if (i <= 0)
+            return (value, value);
 
-                    switch (sv.Value)
-                    {
-                        case bool bl:
-                            builder.Field(targetName, bl);
-                            break;
-                        case int i:
-                            builder.Field(targetName, i);
-                            break;
-                        case double db:
-                            builder.Field(targetName, db);
-                            break;
-                        case decimal dc:
-                            builder.Field(targetName, dc);
-                            break;
-                        case long l:
-                            builder.Field(targetName, l);
-                            break;
-                        case uint ui:
-                            builder.Field(targetName, ui);
-                            break;
-                        case ulong u:
-                            builder.Field(targetName, u);
-                            break;
-                        case byte b:
-                            builder.Field(targetName, b);
-                            break;
-                        case string s:
-                            builder.Field(targetName, s);
-                            break;
-                        case null:
-                        default:
-                            builder.Field(targetName, value?.ToString());
-                            break;
-                    }
-                }
-            }
-
-            return builder;
-        }
-
-        private static (string, string) SplitIfColumnPresent(this string value)
-        {
-            var i = value.IndexOf(':');
-
-            if (i <= 0)
-                return (value, value);
-
-            return (value.Substring(0, i), value.Substring(i + 1));
-        }
+        return (value.Substring(0, i), value.Substring(i + 1));
     }
 }
