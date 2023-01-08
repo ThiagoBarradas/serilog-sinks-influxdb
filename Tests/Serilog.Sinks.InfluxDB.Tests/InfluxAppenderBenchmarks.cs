@@ -39,8 +39,7 @@ public class InfluxAppenderBenchmarks : InfluxDBTestContainer
 
 public class InfluxAppenderBenchmarkTests
 {
-    [Fact]
-    [Conditional("Release")]
+    [Fact(Skip = "Result is never asserted, not clear what this test should verify.")]
     public void BenchmarkTest()
     {
 #if !DEBUG
