@@ -15,6 +15,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <RepositoryUrl>https://github.com/pada57/serilog-sinks-influxdb</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <RootNamespace>Serilog</RootNamespace>
     <Version>2.3.0</Version>
     <PackageReleaseNotes>
       2.3.0:
