@@ -1,10 +1,55 @@
 ﻿using InfluxDB.Client.Writes;
 using Serilog.Events;
+using System.Text;
 
 namespace Serilog.Sinks.InfluxDB;
 
-static class PointDataExtensions
+static class ExtensionMethods
 {
+    public static string EscapeSpecialCharacters(this string? text)
+    {
+        if (text is null)
+            return string.Empty;
+
+        static int Escape(StringBuilder text, int index, char placeholder)
+        {
+            text[index] = '\\';
+            text.Insert(++index, placeholder);
+            return index;
+        }
+
+        static int Mask(StringBuilder text, int index, char value)
+        {
+            switch ((int)value)
+            {
+                case < 0x20:
+                case >= 0x7F:
+                    text[index] = '?';
+                    break;
+            }
+
+            return index;
+        }
+
+        var builder = new StringBuilder(text, 2 * text.Length);
+
+        for (var index = 0; index < builder.Length; index++)
+        {
+            var c = builder[index];
+
+            index = c switch
+            {
+                '\n' => Escape(builder, index, 'n'),
+                '\r' => Escape(builder, index, 'r'),
+                '\t' => index,
+                '\\' => Escape(builder, index, '\\'),
+                _ => Mask(builder, index, c)
+            };
+        }
+
+        return builder.ToString();
+    }
+
     public static PointData.Builder OptionalTag(this PointData.Builder builder, string name, string? value)
     {
         if (!string.IsNullOrWhiteSpace(value))
@@ -28,7 +73,7 @@ static class PointDataExtensions
 
             var value = (propertyValue is ScalarValue { Value: string text }) ? text : propertyValue.ToString();
 
-            builder.Tag(targetName, value);
+            builder.Tag(targetName, value.EscapeSpecialCharacters());
         }
 
         return builder;
@@ -76,10 +121,10 @@ static class PointDataExtensions
                         builder.Field(targetName, b);
                         break;
                     case string s:
-                        builder.Field(targetName, s);
+                        builder.Field(targetName, s.EscapeSpecialCharacters());
                         break;
                     default:
-                        builder.Field(targetName, value.ToString());
+                        builder.Field(targetName, value.ToString().EscapeSpecialCharacters());
                         break;
                 }
             }

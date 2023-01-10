@@ -3,6 +3,7 @@ using DotNet.Testcontainers.Containers;
 using InfluxDB.Client;
 using InfluxDB.Client.Api.Domain;
 using JetBrains.Annotations;
+using Serilog.Sinks.InfluxDB;
 
 [PublicAPI]
 public class InfluxDBTestContainer : IAsyncLifetime, IAsyncDisposable
@@ -14,7 +15,36 @@ public class InfluxDBTestContainer : IAsyncLifetime, IAsyncDisposable
     public Bucket DefaultBucket { get; private set; } = null!;
     public ushort Port { get; private set; }
 
-    public async Task<ICollection<QueryResult>> GetAllRowsAsync(string? bucketName = null)
+    public async Task<ICollection<QueryResult>> GetAllRowsAsync()
+    {
+        var rows = await GetAllRowsRawAsync();
+
+        // replace volatile values with constants to simplify testing.
+        foreach (var row in rows)
+        {
+            switch (row.Field)
+            {
+                case "procid":
+                case "timestamp":
+                    row.Value = row.Field.ToUpperInvariant();
+                    break;
+            }
+
+            row.Tags["hostname"] = "HOSTNAME";
+        }
+
+        return rows;
+    }
+
+    public InfluxDBConnectionInfo ConnectionInfo => new()
+    {
+        AllAccessToken = AdminToken,
+        Uri = new Uri($"http://127.0.0.1:{Port}"),
+        BucketName = DefaultBucket.Name,
+        OrganizationId = DefaultBucket.OrgID
+    };
+
+    private async Task<ICollection<QueryResult>> GetAllRowsRawAsync(string? bucketName = null)
     {
         bucketName ??= DefaultBucket.Name;
 

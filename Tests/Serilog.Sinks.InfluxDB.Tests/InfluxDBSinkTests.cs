@@ -1,21 +1,21 @@
-﻿using Serilog.Events;
+﻿using InfluxDB.Client.Core.Exceptions;
+using Serilog.Events;
 using Serilog.Parsing;
 using Serilog.Sinks.InfluxDB.Console.AppSettings;
-using System.Text.RegularExpressions;
 
 namespace Serilog.Sinks.InfluxDB.Tests;
 
-public class InfluxDBSinkTests
+public static class InfluxDBSinkTests
 {
     public class GivenBucketDoesNotExists : InfluxDBTestContainer
     {
         [Fact]
         public async Task ShouldCreateBucketIfCreateFlagIsSet()
         {
-            var sut = new InfluxDBSink(new InfluxDBSinkOptions()
+            var sut = new InfluxDBSink(new InfluxDBSinkOptions
             {
                 ApplicationName = $"Test_{nameof(GivenBucketDoesNotExists)}",
-                ConnectionInfo = new InfluxDBConnectionInfo()
+                ConnectionInfo = new InfluxDBConnectionInfo
                 {
                     Uri = new Uri($"http://127.0.0.1:{Port}"),
                     BucketName = "logs",
@@ -26,7 +26,8 @@ public class InfluxDBSinkTests
                 },
             });
 
-            var events = new[] {
+            var events = new[]
+            {
                 new LogEvent(DateTimeOffset.UtcNow, LogEventLevel.Information, null
                     , new MessageTemplate($"{nameof(ShouldCreateBucketIfCreateFlagIsSet)}", Enumerable.Empty<MessageTemplateToken>())
                     , Enumerable.Empty<LogEventProperty>())
@@ -44,10 +45,10 @@ public class InfluxDBSinkTests
         [Fact]
         public async Task DoesNotCreateBucketIfCreateFlagIsNotSet()
         {
-            var sut = new InfluxDBSink(new InfluxDBSinkOptions()
+            var sut = new InfluxDBSink(new InfluxDBSinkOptions
             {
                 ApplicationName = $"Test_{nameof(GivenBucketDoesNotExists)}",
-                ConnectionInfo = new InfluxDBConnectionInfo()
+                ConnectionInfo = new InfluxDBConnectionInfo
                 {
                     Uri = new Uri($"http://127.0.0.1:{Port}"),
                     BucketName = "logs",
@@ -58,13 +59,14 @@ public class InfluxDBSinkTests
                 },
             });
 
-            var events = new[] {
+            var events = new[]
+            {
                 new LogEvent(DateTimeOffset.UtcNow, LogEventLevel.Information, null
                     , new MessageTemplate($"{nameof(ShouldCreateBucketIfCreateFlagIsSet)}", Enumerable.Empty<MessageTemplateToken>())
                     , Enumerable.Empty<LogEventProperty>())
             };
 
-            await Assert.ThrowsAsync<global::InfluxDB.Client.Core.Exceptions.NotFoundException>(() => sut.EmitBatchAsync(events));
+            await Assert.ThrowsAsync<NotFoundException>(() => sut.EmitBatchAsync(events));
         }
     }
 
@@ -75,7 +77,7 @@ public class InfluxDBSinkTests
         public async Task ApplicationAndFacilityAreLoggedIfOnlyApplicationIsConfigured()
         {
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions
                 {
                     ApplicationName = "TestApplication",
                     ConnectionInfo = ConnectionInfo,
@@ -86,14 +88,14 @@ public class InfluxDBSinkTests
 
             await Log.CloseAndFlushAsync();
 
-            await Verify(GetAllRowsAsync(), Settings);
+            await Verify(GetAllRowsAsync());
         }
 
         [Fact]
         public async Task OnlyApplicationIsLoggedIfApplicationIsConfiguredAndInstanceIsAnEmptyString()
         {
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions
                 {
                     ApplicationName = "TestApplication",
                     InstanceName = string.Empty,
@@ -105,24 +107,21 @@ public class InfluxDBSinkTests
 
             await Log.CloseAndFlushAsync();
 
-            await Verify(GetAllRowsAsync(), Settings);
+            await Verify(GetAllRowsAsync());
         }
 
         [Fact]
         public async Task NoApplicationIsLoggedIfNotConfigured()
         {
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
-                {
-                    ConnectionInfo = ConnectionInfo,
-                })
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions { ConnectionInfo = ConnectionInfo })
                 .CreateLogger();
 
             Log.Warning("Some warning {Parameter}", "Some parameter");
 
             await Log.CloseAndFlushAsync();
 
-            await Verify(GetAllRowsAsync(), Settings);
+            await Verify(GetAllRowsAsync());
         }
 
         [Fact]
@@ -130,7 +129,7 @@ public class InfluxDBSinkTests
         {
             Log.Logger = new LoggerConfiguration()
                 .Enrich.With<SourceContextMockEnricher>()
-                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions
                 {
                     ConnectionInfo = ConnectionInfo,
                     ExtendedFields = new[] { "SourceContext" }
@@ -141,7 +140,7 @@ public class InfluxDBSinkTests
 
             await Log.CloseAndFlushAsync();
 
-            await Verify(GetAllRowsAsync(), Settings);
+            await Verify(GetAllRowsAsync());
         }
 
         [Fact]
@@ -149,7 +148,7 @@ public class InfluxDBSinkTests
         {
             Log.Logger = new LoggerConfiguration()
                 .Enrich.With<SourceContextMockEnricher>()
-                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions
                 {
                     ConnectionInfo = ConnectionInfo,
                     ExtendedFields = new[] { "SourceContext:context" }
@@ -160,7 +159,7 @@ public class InfluxDBSinkTests
 
             await Log.CloseAndFlushAsync();
 
-            await Verify(GetAllRowsAsync(), Settings);
+            await Verify(GetAllRowsAsync());
         }
 
         [Fact]
@@ -168,7 +167,7 @@ public class InfluxDBSinkTests
         {
             Log.Logger = new LoggerConfiguration()
                 .Enrich.With<SourceContextMockEnricher>()
-                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions
                 {
                     ConnectionInfo = ConnectionInfo,
                     ExtendedTags = new[] { "SourceContext" }
@@ -179,7 +178,7 @@ public class InfluxDBSinkTests
 
             await Log.CloseAndFlushAsync();
 
-            await Verify(GetAllRowsAsync(), Settings);
+            await Verify(GetAllRowsAsync());
         }
 
         [Fact]
@@ -187,7 +186,7 @@ public class InfluxDBSinkTests
         {
             Log.Logger = new LoggerConfiguration()
                 .Enrich.With<SourceContextMockEnricher>()
-                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions
                 {
                     ConnectionInfo = ConnectionInfo,
                     ExtendedTags = new[] { "SourceContext:context" }
@@ -198,44 +197,25 @@ public class InfluxDBSinkTests
 
             await Log.CloseAndFlushAsync();
 
-            await Verify(GetAllRowsAsync(), Settings);
+            await Verify(GetAllRowsAsync());
         }
+    }
 
-        public async Task<ICollection<QueryResult>> GetAllRowsAsync()
+    [UsesVerify]
+    public class GivenVariousInputData : InfluxDBTestContainer
+    {
+        [Fact]
+        public async Task OnlyNeededCharactersAreEscaped()
         {
-            var rows = await base.GetAllRowsAsync();
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions { ConnectionInfo = ConnectionInfo })
+                .CreateLogger();
 
-            foreach (var row in rows)
-            {
-                switch (row.Field)
-                {
-                    case "procid":
-                    case "timestamp":
-                        row.Value = row.Field.ToUpperInvariant();
-                        break;
-                }
+            Log.Information("quoted: '{Parameter}' `back-quotes` CRLF:\r\n LF:\n CR:\r TAB:\t \"double-quotes\" BS:\\r äöüß. EOL", "Some parameter");
 
-                row.Tags["hostname"] = "HOSTNAME";
-            }
+            await Log.CloseAndFlushAsync();
 
-            return rows;
-        }
-
-        private InfluxDBConnectionInfo ConnectionInfo => new()
-        {
-            AllAccessToken = AdminToken,
-            Uri = new Uri($"http://127.0.0.1:{Port}"),
-            BucketName = DefaultBucket.Name,
-            OrganizationId = DefaultBucket.OrgID
-        };
-
-        private static VerifySettings Settings
-        {
-            get
-            {
-                var settings = new VerifySettings();
-                return settings;
-            }
+            await Verify(GetAllRowsAsync());
         }
     }
 }

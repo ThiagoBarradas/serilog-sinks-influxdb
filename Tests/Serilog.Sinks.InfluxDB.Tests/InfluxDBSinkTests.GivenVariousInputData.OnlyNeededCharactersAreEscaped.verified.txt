@@ -5,19 +5,19 @@
     Value: 16,
     Tags: {
       hostname: HOSTNAME,
-      level: Warning,
-      severity: warning
+      level: Information,
+      severity: info
     }
   },
   {
     Time: DateTime_1,
     Table: 1,
     Field: message,
-    Value: Some warning "Some parameter",
+    Value: quoted: '"Some parameter"' `back-quotes` CRLF:\r\n LF:\n CR:\r TAB:	 "double-quotes" BS:\\r ????. EOL,
     Tags: {
       hostname: HOSTNAME,
-      level: Warning,
-      severity: warning
+      level: Information,
+      severity: info
     }
   },
   {
@@ -27,19 +27,19 @@
     Value: PROCID,
     Tags: {
       hostname: HOSTNAME,
-      level: Warning,
-      severity: warning
+      level: Information,
+      severity: info
     }
   },
   {
     Time: DateTime_1,
     Table: 3,
     Field: severity_code,
-    Value: warning,
+    Value: info,
     Tags: {
       hostname: HOSTNAME,
-      level: Warning,
-      severity: warning
+      level: Information,
+      severity: info
     }
   },
   {
@@ -49,8 +49,8 @@
     Value: TIMESTAMP,
     Tags: {
       hostname: HOSTNAME,
-      level: Warning,
-      severity: warning
+      level: Information,
+      severity: info
     }
   },
   {
@@ -60,8 +60,8 @@
     Value: 1,
     Tags: {
       hostname: HOSTNAME,
-      level: Warning,
-      severity: warning
+      level: Information,
+      severity: info
     }
   }
 ]

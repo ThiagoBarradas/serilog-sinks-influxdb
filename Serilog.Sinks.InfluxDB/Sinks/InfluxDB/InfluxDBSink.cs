@@ -5,6 +5,7 @@ using InfluxDB.Client.Writes;
 using Serilog.Debugging;
 using Serilog.Sinks.PeriodicBatching;
 using System.Diagnostics;
+using System.Text;
 using System.Web;
 using static Serilog.Sinks.InfluxDB.SyslogConst;
 
@@ -92,7 +93,7 @@ internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
                 .OptionalTag(Tags.Facility, _instanceName)
                 .Tag(Tags.Hostname, Environment.MachineName)
                 .Tag(Tags.Severity, severity.ToString())
-                .Field(Fields.Message, StripSpecialCharacter(logEvent.RenderMessage(_formatProvider)))
+                .Field(Fields.Message, logEvent.RenderMessage(_formatProvider).EscapeSpecialCharacters())
                 .Field(Fields.Facility, Fields.Values.Facility)
                 .Field(Fields.ProcId, Process.GetCurrentProcess().Id.ToString())
                 .Field(Fields.Severity, severity.ToString())
@@ -142,14 +143,6 @@ internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
         }
 
         _disposed = true;
-    }
-
-
-    private static string StripSpecialCharacter(string? text)
-    {
-        return text != null ?
-            HttpUtility.JavaScriptStringEncode(text)
-            : string.Empty;
     }
 
     /// <summary>

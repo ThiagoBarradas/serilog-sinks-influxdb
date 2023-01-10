@@ -24,7 +24,7 @@
     Time: DateTime_1,
     Table: 2,
     Field: message,
-    Value: Some warning \"Some parameter\",
+    Value: Some warning "Some parameter",
     Tags: {
       hostname: HOSTNAME,
       level: Warning,
