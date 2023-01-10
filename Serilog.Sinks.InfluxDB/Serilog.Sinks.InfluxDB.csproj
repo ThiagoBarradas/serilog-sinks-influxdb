@@ -16,6 +16,8 @@
     <RepositoryUrl>https://github.com/pada57/serilog-sinks-influxdb</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <RootNamespace>Serilog</RootNamespace>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>All</AnalysisMode>
     <Version>2.3.1</Version>
     <PackageReleaseNotes>
       2.3.1:

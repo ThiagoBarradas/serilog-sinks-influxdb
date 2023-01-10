@@ -70,7 +70,7 @@ public static class LoggerConfigurationInfluxDBExtensions
     {
         if (uri is null) throw new ArgumentNullException(nameof(uri));
         if (loggerConfiguration is null) throw new ArgumentNullException(nameof(loggerConfiguration));
-        if (string.IsNullOrEmpty(bucketName)) throw new ArgumentException(nameof(bucketName));
+        if (string.IsNullOrEmpty(bucketName)) throw new ArgumentException("Bucket name must not be empty", nameof(bucketName));
 
         var sinkOptions = new InfluxDBSinkOptions()
         {
@@ -96,7 +96,7 @@ public static class LoggerConfigurationInfluxDBExtensions
     /// No application name and instance name will be defined as tag using this method.
     /// </summary>
     public static LoggerConfiguration InfluxDB(
-        this LoggerSinkConfiguration loggerConfiguration,           
+        this LoggerSinkConfiguration loggerConfiguration,
         Uri uri,
         string organizationId,
         string bucketName = InfluxDBDefaults.DefaultBucketName,
@@ -108,7 +108,7 @@ public static class LoggerConfigurationInfluxDBExtensions
     {
         if (uri is null) throw new ArgumentNullException(nameof(uri));
         if (loggerConfiguration is null) throw new ArgumentNullException(nameof(loggerConfiguration));
-        if (string.IsNullOrEmpty(bucketName)) throw new ArgumentException(nameof(bucketName));
+        if (string.IsNullOrEmpty(bucketName)) throw new ArgumentException("Bucket name must not be empty", nameof(bucketName));
 
         var sinkOptions = new InfluxDBSinkOptions()
         {
@@ -150,9 +150,11 @@ public static class LoggerConfigurationInfluxDBExtensions
             sinkOptions.BatchOptions.QueueLimit = null;
         }
 
+#pragma warning disable CA2000 // Dispose objects before losing scope => serilog disposes them
         var influxDbSink = new InfluxDBSink(sinkOptions);
         var batchingSink = new PeriodicBatchingSink(influxDbSink, sinkOptions.BatchOptions);
 
         return loggerConfiguration.Sink(batchingSink, restrictedToMinimumLevel);
+#pragma warning restore CA2000 // Dispose objects before losing scope
     }
 }

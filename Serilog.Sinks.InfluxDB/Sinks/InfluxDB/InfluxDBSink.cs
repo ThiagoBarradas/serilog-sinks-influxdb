@@ -5,9 +5,9 @@ using InfluxDB.Client.Writes;
 using Serilog.Debugging;
 using Serilog.Sinks.PeriodicBatching;
 using System.Diagnostics;
-using System.Text;
-using System.Web;
+using System.Globalization;
 using static Serilog.Sinks.InfluxDB.SyslogConst;
+using LogEvent = Serilog.Events.LogEvent;
 
 namespace Serilog.Sinks.InfluxDB;
 
@@ -31,9 +31,9 @@ internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
     /// <summary>
     /// Client object used to connect to InfluxDB instance.
     /// </summary>
-    private InfluxDBClient _influxDbClient;
+    private readonly InfluxDBClient _influxDbClient;
 
-    private bool _disposed = false;
+    private bool _disposed;
 
     /// <summary>
     /// Construct a sink inserting into InfluxDB with the specified details.
@@ -42,14 +42,14 @@ internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
     {
         if (options is null) throw new ArgumentNullException(nameof(options));
 
-        _connectionInfo = options.ConnectionInfo ?? throw new ArgumentNullException(nameof(options.ConnectionInfo));
+        _connectionInfo = options.ConnectionInfo ?? throw new ArgumentException("ConnectionInfo info is required.", nameof(options));
 
-        if (_connectionInfo.Uri is null) throw new ArgumentNullException(nameof(_connectionInfo.Uri));
-        if (_connectionInfo.BucketName is null) throw new ArgumentNullException(nameof(_connectionInfo.BucketName));
-        if (_connectionInfo.OrganizationId is null) throw new ArgumentNullException(nameof(_connectionInfo.OrganizationId));
+        if (_connectionInfo.Uri is null) throw new ArgumentException("ConnectionInfo.Uri is required", nameof(options));
+        if (_connectionInfo.BucketName is null) throw new ArgumentException("ConnectionInfo.BucketName is required", nameof(options));
+        if (_connectionInfo.OrganizationId is null) throw new ArgumentException("ConnectionInfo.OrganizationId is required", nameof(options));
 
         if (string.IsNullOrWhiteSpace(_connectionInfo.Token) && string.IsNullOrWhiteSpace(_connectionInfo.AllAccessToken) && string.IsNullOrWhiteSpace(_connectionInfo.Username))
-            throw new ArgumentNullException($"At least one authentication field should be provided: {nameof(_connectionInfo.Username)}/{nameof(_connectionInfo.Password)} or {nameof(_connectionInfo.Token)}({nameof(_connectionInfo.AllAccessToken)} If Buckets has to be check and created if needed)");
+            throw new ArgumentException($"At least one authentication field should be provided: {nameof(_connectionInfo.Username)}/{nameof(_connectionInfo.Password)} or {nameof(_connectionInfo.Token)}({nameof(_connectionInfo.AllAccessToken)} If Buckets has to be check and created if needed)");
 
         _authMethod = string.IsNullOrWhiteSpace(_connectionInfo.Username) ? AuthMethods.Token : AuthMethods.Credentials;
 
@@ -76,11 +76,11 @@ internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
     /// Emit a batch of log events, running asynchronously.
     /// </summary>
     /// <param name="events">The events to emit.</param>
-    public Task EmitBatchAsync(IEnumerable<Events.LogEvent> batch)
+    public Task EmitBatchAsync(IEnumerable<LogEvent> batch)
     {
         if (batch is null) throw new ArgumentNullException(nameof(batch));
 
-        var logEvents = batch as List<Events.LogEvent> ?? batch.ToList();
+        var logEvents = batch as List<LogEvent> ?? batch.ToList();
         var points = new List<PointData>(logEvents.Count);
 
         foreach (var logEvent in logEvents)
@@ -94,18 +94,24 @@ internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
                 .Tag(Tags.Hostname, Environment.MachineName)
                 .Tag(Tags.Severity, severity.ToString())
                 .Field(Fields.Message, logEvent.RenderMessage(_formatProvider).EscapeSpecialCharacters())
-                .Field(Fields.Facility, Fields.Values.Facility)
-                .Field(Fields.ProcId, Process.GetCurrentProcess().Id.ToString())
+                .Field(Fields.Facility, Values.Facility)
+                .Field(Fields.ProcId, Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture))
                 .Field(Fields.Severity, severity.ToString())
                 .Field(Fields.Timestamp, logEvent.Timestamp.ToUnixTimeMilliseconds() * 1000000)
-                .Field(Fields.Version, Fields.Values.Version)
+                .Field(Fields.Version, Values.Version)
                 .Timestamp(logEvent.Timestamp.UtcDateTime, WritePrecision.Ms)
                 .ExtendTags(logEvent, _extendedTags)
                 .ExtendFields(logEvent, _extendedFields);
 
-            if (logEvent.Exception != null) p.Tag(Tags.ExceptionType, logEvent.Exception.GetType().Name);
+            if (logEvent.Exception != null)
+            {
+                p.Tag(Tags.ExceptionType, logEvent.Exception.GetType().Name);
 
-            if (_includeFullException && logEvent.Exception != null) p.Field(Fields.Exception, logEvent.Exception.ToString());
+                if (_includeFullException)
+                {
+                    p.Field(Fields.Exception, logEvent.Exception.ToString().EscapeSpecialCharacters());
+                }
+            }
 
             points.Add(p.ToPointData());
         }
@@ -152,17 +158,20 @@ internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
     private InfluxDBClient CreateInfluxDbClientWithWriteAccess()
     {
 #nullable disable // parameters are already validated
-        var builder = InfluxDBClientOptions
-            .Builder
+        var builder = InfluxDBClientOptions.Builder
             .CreateNew()
             .Url(_connectionInfo.Uri.ToString())
             .Bucket(_connectionInfo.BucketName)
             .Org(_connectionInfo.OrganizationId);
 
         if (_authMethod == AuthMethods.Token)
+        {
             builder.AuthenticateToken((_connectionInfo.Token ?? _connectionInfo.AllAccessToken).ToCharArray());
+        }
         else
+        {
             builder.Authenticate(_connectionInfo.Username, _connectionInfo.Password.ToCharArray());
+        }
 #nullable restore
 
         return new InfluxDBClient(builder.Build());
@@ -174,27 +183,28 @@ internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
     /// </summary>
     private void CreateBucketIfNotExists()
     {
-        if (!_connectionInfo.CreateBucketIfNotExists) return;
+        if (!_connectionInfo.CreateBucketIfNotExists)
+            return;
 
-        using (var createBucketClient = CreateInfluxClientWithAllAccessIfGiven())
+        using var createBucketClient = CreateInfluxClientWithAllAccessIfGiven();
+
+        var bucket = GetBucketOrDefault(createBucketClient, _connectionInfo.BucketName);
+
+        if (bucket is not null)
+            return;
+
+        var newBucket = CreateBucket(createBucketClient);
+
+        if (_authMethod == AuthMethods.Token)
         {
-            var bucket = GetBucketOrDefault(createBucketClient, _connectionInfo.BucketName);
-
-            if (bucket is null)
-            {
-                var newBucket = CreateBucket(createBucketClient);
-
-                if (_authMethod == AuthMethods.Token)
-                    _connectionInfo.Token = GenerateWriteToken(createBucketClient, newBucket);
-            }
+            _connectionInfo.Token = GenerateWriteToken(createBucketClient, newBucket);
         }
     }
 
     private InfluxDBClient CreateInfluxClientWithAllAccessIfGiven()
     {
 #nullable disable // parameters are already validated
-        var builder = InfluxDBClientOptions
-            .Builder
+        var builder = InfluxDBClientOptions.Builder
             .CreateNew()
             .Url(_connectionInfo.Uri.ToString())
             .Org(_connectionInfo.OrganizationId);
@@ -208,7 +218,7 @@ internal class InfluxDBSink : IBatchedLogEventSink, IDisposable
         return new InfluxDBClient(builder.Build());
     }
 
-    private Bucket GetBucketOrDefault(InfluxDBClient createBucketClient, string bucketName)
+    private Bucket? GetBucketOrDefault(InfluxDBClient createBucketClient, string bucketName)
     {
         //TODO use Maybe monad ?
         Bucket bucket;

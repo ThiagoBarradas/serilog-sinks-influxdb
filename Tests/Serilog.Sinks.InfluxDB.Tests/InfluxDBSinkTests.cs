@@ -12,7 +12,7 @@ public static class InfluxDBSinkTests
         [Fact]
         public async Task ShouldCreateBucketIfCreateFlagIsSet()
         {
-            var sut = new InfluxDBSink(new InfluxDBSinkOptions
+            using var sut = new InfluxDBSink(new InfluxDBSinkOptions
             {
                 ApplicationName = $"Test_{nameof(GivenBucketDoesNotExists)}",
                 ConnectionInfo = new InfluxDBConnectionInfo
@@ -45,7 +45,7 @@ public static class InfluxDBSinkTests
         [Fact]
         public async Task DoesNotCreateBucketIfCreateFlagIsNotSet()
         {
-            var sut = new InfluxDBSink(new InfluxDBSinkOptions
+            using var sut = new InfluxDBSink(new InfluxDBSinkOptions
             {
                 ApplicationName = $"Test_{nameof(GivenBucketDoesNotExists)}",
                 ConnectionInfo = new InfluxDBConnectionInfo

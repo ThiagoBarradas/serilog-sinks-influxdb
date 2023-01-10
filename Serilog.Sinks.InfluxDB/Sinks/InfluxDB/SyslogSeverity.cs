@@ -18,16 +18,15 @@ internal static class SyslogExtensions
 {
     public static SyslogSeverity ToSeverity(this LogEventLevel logEventLevel)
     {
-        switch (logEventLevel)
+        return logEventLevel switch
         {
-            case LogEventLevel.Error: return SyslogSeverity.err;
-            case LogEventLevel.Information: return SyslogSeverity.info;
-            case LogEventLevel.Warning: return SyslogSeverity.warning;
-            case LogEventLevel.Verbose: return SyslogSeverity.debug;
-            case LogEventLevel.Debug: return SyslogSeverity.debug;
-            case LogEventLevel.Fatal: return SyslogSeverity.emerg;
-            default:
-                return SyslogSeverity.info;
-        }
+            LogEventLevel.Error => SyslogSeverity.err,
+            LogEventLevel.Information => SyslogSeverity.info,
+            LogEventLevel.Warning => SyslogSeverity.warning,
+            LogEventLevel.Verbose => SyslogSeverity.debug,
+            LogEventLevel.Debug => SyslogSeverity.debug,
+            LogEventLevel.Fatal => SyslogSeverity.emerg,
+            _ => SyslogSeverity.info
+        };
     }
 }

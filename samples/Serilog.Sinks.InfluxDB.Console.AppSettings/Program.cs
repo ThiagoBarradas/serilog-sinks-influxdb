@@ -7,6 +7,7 @@ using System.CommandLine.Builder;
 using System.CommandLine.Hosting;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using System.Diagnostics;
 
 namespace Serilog.Sinks.InfluxDB.Console.AppSettings;
 
@@ -85,7 +86,7 @@ class Program
 
     private static void Run(SampleOptions options, IHost host)
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var sw = Stopwatch.StartNew();
 
         for (var i = 0; i < options.Number; ++i)
         {

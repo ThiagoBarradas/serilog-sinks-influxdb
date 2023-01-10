@@ -1,6 +1,7 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using Serilog.Sinks.InfluxDB;
+using Serilog.Sinks.PeriodicBatching;
 
 namespace Serilog.Sinks.InfluxDb.Benchmarks;
 
@@ -36,7 +37,7 @@ public class SerilogInfluxDBBenchmarks
                     CreateBucketIfNotExists = true,
                     AllAccessToken = InfluxDBTestContainer.AdminToken,
                 },
-                BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
+                BatchOptions = new PeriodicBatchingSinkOptions()
                 {
                     BatchSizeLimit = 200
                 }

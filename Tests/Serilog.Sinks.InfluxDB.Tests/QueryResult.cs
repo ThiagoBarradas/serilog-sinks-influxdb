@@ -1,5 +1,6 @@
 using InfluxDB.Client.Core.Flux.Domain;
 using JetBrains.Annotations;
+using NodaTime;
 
 [PublicAPI]
 public class QueryResult
@@ -9,7 +10,7 @@ public class QueryResult
         Table = record.Table;
         var values = record.Values;
 
-        Time = ((NodaTime.Instant)values["_time"]).ToDateTimeUtc();
+        Time = ((Instant)values["_time"]).ToDateTimeUtc();
         Field = (string)values["_field"];
         Value = values["_value"];
         Tags = values

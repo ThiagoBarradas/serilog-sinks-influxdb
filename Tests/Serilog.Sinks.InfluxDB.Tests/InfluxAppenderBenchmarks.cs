@@ -1,4 +1,5 @@
 ﻿using BenchmarkDotNet.Attributes;
+using Serilog.Sinks.PeriodicBatching;
 
 namespace Serilog.Sinks.InfluxDB.Tests;
 
@@ -21,7 +22,7 @@ public class InfluxAppenderBenchmarks : InfluxDBTestContainer
                     Uri = new Uri($"http://127.0.0.1:{Port}"),
                     BucketName = "test"
                 },
-                BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
+                BatchOptions = new PeriodicBatchingSinkOptions()
                 {
                     BatchSizeLimit = 100
                 }

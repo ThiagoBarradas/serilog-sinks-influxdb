@@ -1,6 +1,6 @@
 ﻿namespace Serilog.Sinks.InfluxDB;
 
-public class InfluxDBDefaults
+public static class InfluxDBDefaults
 {
     /// <summary>
     /// Default port for InfluxDB

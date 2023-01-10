@@ -14,7 +14,7 @@ public class InfluxDBSinkOptions
 
     public PeriodicBatchingSinkOptions? BatchOptions { get; set; } = new();
 
-    public IFormatProvider? FormatProvider { get; set; } = null;
+    public IFormatProvider? FormatProvider { get; set; }
 
     public string[]? ExtendedTags { get; set; }
 
