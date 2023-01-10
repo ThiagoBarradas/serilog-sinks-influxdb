@@ -16,8 +16,11 @@
     <RepositoryUrl>https://github.com/pada57/serilog-sinks-influxdb</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <RootNamespace>Serilog</RootNamespace>
-    <Version>2.3.0</Version>
+    <Version>2.3.1</Version>
     <PackageReleaseNotes>
+      2.3.1:
+      - Fix only CR, LF and \ must be escaped https://github.com/pada57/serilog-sinks-influxdb/issues/26
+      - Fix non-ASCI characters must be omitted https://github.com/pada57/serilog-sinks-influxdb/issues/28
       2.3.0:
       - Extended Fields/Tags to support name mapping https://github.com/pada57/serilog-sinks-influxdb/issues/20
       - Fix field type ProcId to be string instead of integer as in syslog format https://github.com/pada57/serilog-sinks-influxdb/issues/21
@@ -74,6 +77,10 @@
 
   <ItemGroup>
     <PackageReference Include="InfluxDB.Client" Version="4.9.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Serilog" Version="2.12.0" />
     <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="3.1.0" />
   </ItemGroup>

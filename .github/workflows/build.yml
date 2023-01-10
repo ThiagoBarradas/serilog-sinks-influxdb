@@ -6,8 +6,8 @@ env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
 jobs:
-  linux:
-    name: Linux
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
