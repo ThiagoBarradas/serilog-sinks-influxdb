@@ -18,8 +18,10 @@
     <RootNamespace>Serilog</RootNamespace>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>All</AnalysisMode>
-    <Version>2.3.1</Version>
+    <Version>2.3.2</Version>
     <PackageReleaseNotes>
+      2.3.2:
+      - Revert fix for https://github.com/pada57/serilog-sinks-influxdb/issues/28
       2.3.1:
       - Fix only CR, LF and \ must be escaped https://github.com/pada57/serilog-sinks-influxdb/issues/26
       - Fix non-ASCI characters must be omitted https://github.com/pada57/serilog-sinks-influxdb/issues/28
