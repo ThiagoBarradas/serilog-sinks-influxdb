@@ -1,11 +1,8 @@
 ﻿using InfluxDB.Client.Writes;
 using Serilog.Events;
 using Serilog.Parsing;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
-using Xunit;
 
 namespace Serilog.Sinks.InfluxDB.Tests;
 
@@ -22,7 +19,7 @@ public class PointExtensionsTest
 
         var p = PointData.Builder.Measurement("test");
 
-        LogEventProperty[] properties = { new LogEventProperty(testProperty, new ScalarValue(value)) };
+        LogEventProperty[] properties = { new(testProperty, new ScalarValue(value)) };
 
         var le = new LogEvent(DateTime.Now, LogEventLevel.Error, new Exception(), new MessageTemplate("", Array.Empty<MessageTemplateToken>()), properties);
 
@@ -32,10 +29,11 @@ public class PointExtensionsTest
         p.ExtendFields(le, fieldNames);
 
         //Assert
-        FieldInfo fi = p.GetType().GetField("_fields", BindingFlags.NonPublic | BindingFlags.Instance);
+        var fi = p.GetType().GetField("_fields", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        var fields = (IDictionary<string, object>)fi.GetValue(p);
+        var fields = (IDictionary<string, object>?)fi?.GetValue(p);
 
+        Assert.NotNull(fields);
         Assert.Single(fields);
 
         fields.TryGetValue(testProperty, out var storedValue);
@@ -54,7 +52,7 @@ public class PointExtensionsTest
 
         var p = PointData.Builder.Measurement("test");
 
-        LogEventProperty[] properties = { new LogEventProperty(testProperty, new ScalarValue(value)) };
+        LogEventProperty[] properties = { new(testProperty, new ScalarValue(value)) };
 
         var le = new LogEvent(DateTime.Now, LogEventLevel.Error, new Exception(), new MessageTemplate("", Array.Empty<MessageTemplateToken>()), properties);
 
@@ -64,10 +62,11 @@ public class PointExtensionsTest
         p.ExtendTags(le, tagNames);
 
         //Assert
-        FieldInfo fi = p.GetType().GetField("_tags", BindingFlags.NonPublic | BindingFlags.Instance);
+        var fi = p.GetType().GetField("_tags", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        var tags = (IDictionary<string, string>)fi.GetValue(p);
+        var tags = (IDictionary<string, string>?)fi?.GetValue(p);
 
+        Assert.NotNull(tags);
         Assert.Single(tags);
 
         tags.TryGetValue(testProperty, out var storedValue);

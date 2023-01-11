@@ -1,17 +1,13 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Serilog.Debugging;
-using System;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Hosting;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Serilog.Sinks.InfluxDB.Console.AppSettings;
 
@@ -90,7 +86,7 @@ class Program
 
     private static void Run(SampleOptions options, IHost host)
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var sw = Stopwatch.StartNew();
 
         for (var i = 0; i < options.Number; ++i)
         {

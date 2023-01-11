@@ -2,40 +2,24 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\..\docker-compose-v2.yml" Link="docker-compose-v2.yml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="dockercomposefixture" Version="1.1.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
+    <PackageReference Include="InfluxDB.Client" Version="4.9.0" />
+    <PackageReference Include="JetBrains.Annotations" Version="2022.3.1" PrivateAssets="all" />
+    <PackageReference Include="Testcontainers" Version="2.3.0" />
+    <PackageReference Include="Verify.Xunit" Version="19.5.0" />
     <PackageReference Include="xunit" Version="2.4.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="coverlet.collector" Version="3.2.0">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-      <PackageReference Include="BenchmarkDotNet" Version="0.13.3" />
-      <PackageReference Include="Moq" Version="4.18.4" />
-      <PackageReference Include="RichardSzalay.MockHttp" Version="6.0.0" />
-      <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
-    </ItemGroup>
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" PrivateAssets="all" />
+    <PackageReference Include="coverlet.collector" Version="3.2.0" PrivateAssets="all" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.3" />
+    <PackageReference Include="Moq" Version="4.18.4" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Serilog.Sinks.InfluxDB\Serilog.Sinks.InfluxDB.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="docker-compose-testing-v2.yml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>

@@ -1,24 +1,22 @@
-﻿using System;
-using System.Runtime.Serialization;
+﻿using System.Runtime.Serialization;
 
-namespace Serilog.Sinks.InfluxDB
+namespace Serilog.Sinks.InfluxDB;
+
+public class InfluxDbClientCreateBucketException : Exception
 {
-    public class InfluxDbClientCreateBucketException : Exception
+    public InfluxDbClientCreateBucketException()
     {
-        public InfluxDbClientCreateBucketException()
-        {
-        }
+    }
 
-        public InfluxDbClientCreateBucketException(string message) : base(message)
-        {
-        }
+    public InfluxDbClientCreateBucketException(string message) : base(message)
+    {
+    }
 
-        public InfluxDbClientCreateBucketException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
+    public InfluxDbClientCreateBucketException(string message, Exception innerException) : base(message, innerException)
+    {
+    }
 
-        protected InfluxDbClientCreateBucketException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+    protected InfluxDbClientCreateBucketException(SerializationInfo info, StreamingContext context) : base(info, context)
+    {
     }
 }

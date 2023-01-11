@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CI)' == 'true'">
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+</Project>

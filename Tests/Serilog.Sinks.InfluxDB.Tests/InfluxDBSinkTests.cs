@@ -1,63 +1,221 @@
-﻿using DockerComposeFixture;
+﻿using InfluxDB.Client.Core.Exceptions;
 using Serilog.Events;
 using Serilog.Parsing;
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Threading.Tasks;
-using Xunit;
+using Serilog.Sinks.InfluxDB.Console.AppSettings;
 
 namespace Serilog.Sinks.InfluxDB.Tests;
 
-public class InfluxDBSinkTests : IClassFixture<DockerFixture>
+public static class InfluxDBSinkTests
 {
-    public InfluxDBSinkTests(DockerFixture dockerFixture)
+    public class GivenBucketDoesNotExists : InfluxDBTestContainer
     {
-        dockerFixture.InitOnce(() => new DockerFixtureOptions
-        {
-            DockerComposeFiles = new[] { "docker-compose-v2.yml" },
-            //DockerComposeFiles = new[] { "docker-compose-testing-v2.yml" },
-            CustomUpTest = output => output.Any(l => l.Contains("Welcome to InfluxDB"))
-        });
-    }
-
-
-    public class GivenBucketDoesNotExists : InfluxDBSinkTests
-    {
-        private readonly InfluxDBSink _sut;
-
-        public GivenBucketDoesNotExists(DockerFixture dockerFixture)
-            : base(dockerFixture)
-        {
-            _sut = new InfluxDBSink(new InfluxDBSinkOptions()
-            {
-                ApplicationName = $"Test_{nameof(GivenBucketDoesNotExists)}",
-                ConnectionInfo = new InfluxDBConnectionInfo()
-                {
-                    Uri = new Uri("http://127.0.0.1:8086"),
-                    BucketName = "logs",
-                    OrganizationId = "88e1f5a5ad074d9e",  // Organization Id - unique id can be found under Profile > About > Common Ids
-                    CreateBucketIfNotExists = true,
-                    //Username = "admin",
-                    //Password = "admin",
-                    AllAccessToken = "bGfBKhSycNiUOia4k7peib2jHFewkz3o6Hv2uz1xAoUcdnEFRW7cHn03KICySLemA4VPZKvc0CwzSQT8GNl2DA==",
-                    BucketRetentionPeriod = TimeSpan.FromDays(1)
-                },
-            });
-        }
-
         [Fact]
         public async Task ShouldCreateBucketIfCreateFlagIsSet()
         {
-            var events = new[] {
+            using var sut = new InfluxDBSink(new InfluxDBSinkOptions
+            {
+                ApplicationName = $"Test_{nameof(GivenBucketDoesNotExists)}",
+                ConnectionInfo = new InfluxDBConnectionInfo
+                {
+                    Uri = new Uri($"http://127.0.0.1:{Port}"),
+                    BucketName = "logs",
+                    OrganizationId = DefaultBucket.OrgID,
+                    CreateBucketIfNotExists = true,
+                    AllAccessToken = AdminToken,
+                    BucketRetentionPeriod = TimeSpan.FromDays(1)
+                },
+            });
+
+            var events = new[]
+            {
                 new LogEvent(DateTimeOffset.UtcNow, LogEventLevel.Information, null
                     , new MessageTemplate($"{nameof(ShouldCreateBucketIfCreateFlagIsSet)}", Enumerable.Empty<MessageTemplateToken>())
                     , Enumerable.Empty<LogEventProperty>())
             };
 
-            await _sut.EmitBatchAsync(events);
+            await sut.EmitBatchAsync(events);
 
+            var bucketsApi = InfluxDBClient.GetBucketsApi();
 
+            var bucket = await bucketsApi.FindBucketByNameAsync("logs");
+
+            Assert.NotNull(bucket);
+        }
+
+        [Fact]
+        public async Task DoesNotCreateBucketIfCreateFlagIsNotSet()
+        {
+            using var sut = new InfluxDBSink(new InfluxDBSinkOptions
+            {
+                ApplicationName = $"Test_{nameof(GivenBucketDoesNotExists)}",
+                ConnectionInfo = new InfluxDBConnectionInfo
+                {
+                    Uri = new Uri($"http://127.0.0.1:{Port}"),
+                    BucketName = "logs",
+                    OrganizationId = DefaultBucket.OrgID,
+                    CreateBucketIfNotExists = false,
+                    AllAccessToken = AdminToken,
+                    BucketRetentionPeriod = TimeSpan.FromDays(1)
+                },
+            });
+
+            var events = new[]
+            {
+                new LogEvent(DateTimeOffset.UtcNow, LogEventLevel.Information, null
+                    , new MessageTemplate($"{nameof(ShouldCreateBucketIfCreateFlagIsSet)}", Enumerable.Empty<MessageTemplateToken>())
+                    , Enumerable.Empty<LogEventProperty>())
+            };
+
+            await Assert.ThrowsAsync<NotFoundException>(() => sut.EmitBatchAsync(events));
+        }
+    }
+
+    [UsesVerify]
+    public class GivenSpecificConfigurations : InfluxDBTestContainer
+    {
+        [Fact]
+        public async Task ApplicationAndFacilityAreLoggedIfOnlyApplicationIsConfigured()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions
+                {
+                    ApplicationName = "TestApplication",
+                    ConnectionInfo = ConnectionInfo,
+                })
+                .CreateLogger();
+
+            Log.Warning("Some warning {Parameter}", "Some parameter");
+
+            await Log.CloseAndFlushAsync();
+
+            await Verify(GetAllRowsAsync());
+        }
+
+        [Fact]
+        public async Task OnlyApplicationIsLoggedIfApplicationIsConfiguredAndInstanceIsAnEmptyString()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions
+                {
+                    ApplicationName = "TestApplication",
+                    InstanceName = string.Empty,
+                    ConnectionInfo = ConnectionInfo,
+                })
+                .CreateLogger();
+
+            Log.Warning("Some warning {Parameter}", "Some parameter");
+
+            await Log.CloseAndFlushAsync();
+
+            await Verify(GetAllRowsAsync());
+        }
+
+        [Fact]
+        public async Task NoApplicationIsLoggedIfNotConfigured()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions { ConnectionInfo = ConnectionInfo })
+                .CreateLogger();
+
+            Log.Warning("Some warning {Parameter}", "Some parameter");
+
+            await Log.CloseAndFlushAsync();
+
+            await Verify(GetAllRowsAsync());
+        }
+
+        [Fact]
+        public async Task ExtendedFieldIsLogged()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .Enrich.With<SourceContextMockEnricher>()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions
+                {
+                    ConnectionInfo = ConnectionInfo,
+                    ExtendedFields = new[] { "SourceContext" }
+                })
+                .CreateLogger();
+
+            Log.Warning("Some warning {Parameter}", "Some parameter");
+
+            await Log.CloseAndFlushAsync();
+
+            await Verify(GetAllRowsAsync());
+        }
+
+        [Fact]
+        public async Task ExtendedFieldIsLoggedWithMappedName()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .Enrich.With<SourceContextMockEnricher>()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions
+                {
+                    ConnectionInfo = ConnectionInfo,
+                    ExtendedFields = new[] { "SourceContext:context" }
+                })
+                .CreateLogger();
+
+            Log.Warning("Some warning {Parameter}", "Some parameter");
+
+            await Log.CloseAndFlushAsync();
+
+            await Verify(GetAllRowsAsync());
+        }
+
+        [Fact]
+        public async Task ExtendedTagIsLogged()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .Enrich.With<SourceContextMockEnricher>()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions
+                {
+                    ConnectionInfo = ConnectionInfo,
+                    ExtendedTags = new[] { "SourceContext" }
+                })
+                .CreateLogger();
+
+            Log.Warning("Some warning {Parameter}", "Some parameter");
+
+            await Log.CloseAndFlushAsync();
+
+            await Verify(GetAllRowsAsync());
+        }
+
+        [Fact]
+        public async Task ExtendedTagIsLoggedWithMappedName()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .Enrich.With<SourceContextMockEnricher>()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions
+                {
+                    ConnectionInfo = ConnectionInfo,
+                    ExtendedTags = new[] { "SourceContext:context" }
+                })
+                .CreateLogger();
+
+            Log.Warning("Some warning {Parameter}", "Some parameter");
+
+            await Log.CloseAndFlushAsync();
+
+            await Verify(GetAllRowsAsync());
+        }
+    }
+
+    [UsesVerify]
+    public class GivenVariousInputData : InfluxDBTestContainer
+    {
+        [Fact]
+        public async Task OnlyNeededCharactersAreEscaped()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.InfluxDB(new InfluxDBSinkOptions { ConnectionInfo = ConnectionInfo })
+                .CreateLogger();
+
+            Log.Information("quoted: '{Parameter}' `back-quotes` CRLF:\r\n LF:\n CR:\r TAB:\t \"double-quotes\" BS:\\r äöüß. EOL", "Some parameter");
+
+            await Log.CloseAndFlushAsync();
+
+            await Verify(GetAllRowsAsync());
         }
     }
 }

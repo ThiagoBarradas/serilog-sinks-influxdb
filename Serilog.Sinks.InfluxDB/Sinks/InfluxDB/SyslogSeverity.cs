@@ -1,34 +1,32 @@
 ﻿using Serilog.Events;
 
-namespace Serilog.Sinks.InfluxDB
-{
-    internal enum SyslogSeverity
-    {
-        emerg,
-        alert,
-        crit,
-        err,
-        warning,
-        notice,
-        info,
-        debug
-    }
+namespace Serilog.Sinks.InfluxDB;
 
-    internal static class SyslogExtensions
+internal enum SyslogSeverity
+{
+    emerg,
+    alert,
+    crit,
+    err,
+    warning,
+    notice,
+    info,
+    debug
+}
+
+internal static class SyslogExtensions
+{
+    public static SyslogSeverity ToSeverity(this LogEventLevel logEventLevel)
     {
-        public static SyslogSeverity ToSeverity(this LogEventLevel logEventLevel)
+        return logEventLevel switch
         {
-            switch (logEventLevel)
-            {
-                case LogEventLevel.Error: return SyslogSeverity.err;
-                case LogEventLevel.Information: return SyslogSeverity.info;
-                case LogEventLevel.Warning: return SyslogSeverity.warning;
-                case LogEventLevel.Verbose: return SyslogSeverity.debug;
-                case LogEventLevel.Debug: return SyslogSeverity.debug;
-                case LogEventLevel.Fatal: return SyslogSeverity.emerg;
-                default:
-                    return SyslogSeverity.info;
-            }
-        }
+            LogEventLevel.Error => SyslogSeverity.err,
+            LogEventLevel.Information => SyslogSeverity.info,
+            LogEventLevel.Warning => SyslogSeverity.warning,
+            LogEventLevel.Verbose => SyslogSeverity.debug,
+            LogEventLevel.Debug => SyslogSeverity.debug,
+            LogEventLevel.Fatal => SyslogSeverity.emerg,
+            _ => SyslogSeverity.info
+        };
     }
 }

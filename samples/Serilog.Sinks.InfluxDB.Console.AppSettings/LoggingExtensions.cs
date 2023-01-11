@@ -1,5 +1,4 @@
 ﻿using Serilog.Configuration;
-using System;
 
 namespace Serilog.Sinks.InfluxDB.Console.AppSettings;
 

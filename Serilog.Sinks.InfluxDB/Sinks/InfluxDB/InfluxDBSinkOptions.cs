@@ -1,26 +1,22 @@
 ﻿using Serilog.Sinks.PeriodicBatching;
-using System;
 
-namespace Serilog.Sinks.InfluxDB
+namespace Serilog.Sinks.InfluxDB;
+
+public class InfluxDBSinkOptions
 {
-    public class InfluxDBSinkOptions
-    {
-        public string ApplicationName { get; set; }
+    public string? ApplicationName { get; set; }
 
-        public string InstanceName { get; set; }
+    public string? InstanceName { get; set; }
 
-        public bool? IncludeFullException { get; set; } = false;
+    public bool? IncludeFullException { get; set; } = false;
 
-        public InfluxDBConnectionInfo ConnectionInfo { get; set; } = new InfluxDBConnectionInfo();
+    public InfluxDBConnectionInfo? ConnectionInfo { get; set; } = new();
 
-        public PeriodicBatchingSinkOptions BatchOptions { get; set; } = new PeriodicBatchingSinkOptions();
+    public PeriodicBatchingSinkOptions? BatchOptions { get; set; } = new();
 
-        public IFormatProvider FormatProvider { get; set; } = null;
+    public IFormatProvider? FormatProvider { get; set; }
 
-        public string[] ExtendedTags { get; set; }
+    public string[]? ExtendedTags { get; set; }
 
-        public string[] ExtendedFields { get; set; }
-
-
-    }
+    public string[]? ExtendedFields { get; set; }
 }

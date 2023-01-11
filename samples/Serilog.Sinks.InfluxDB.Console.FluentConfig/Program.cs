@@ -4,14 +4,13 @@ using Microsoft.Extensions.Hosting;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Sinks.InfluxDB.Console.Console.FluentConfig;
-using System;
+using Serilog.Sinks.PeriodicBatching;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Hosting;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Serilog.Sinks.InfluxDB.Console.FluentConfig;
 
@@ -89,7 +88,7 @@ class Program
 
     private static void Run(SampleOptions options, IHost host)
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var sw = Stopwatch.StartNew();
 
         Log.Logger = new LoggerConfiguration()
             .WriteTo.InfluxDB(new InfluxDBSinkOptions()
@@ -108,7 +107,7 @@ class Program
                     AllAccessToken = "fGXiRVaWmwUO0pbT9CClG3qWHJa4Sio1IQPuyEsUOTq9T0hKDVabrgDzq_Np70y1UnmbzkRddvfU65eb7z0pJQ==",
                     BucketRetentionPeriod = TimeSpan.FromDays(1)
                 },
-                BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
+                BatchOptions = new PeriodicBatchingSinkOptions()
                 {
                     BatchSizeLimit = 50,
                     Period = TimeSpan.FromSeconds(10),

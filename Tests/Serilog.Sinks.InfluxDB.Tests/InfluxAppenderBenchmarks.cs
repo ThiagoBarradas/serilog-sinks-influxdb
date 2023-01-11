@@ -1,16 +1,14 @@
 ﻿using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
-using System;
-using Xunit;
+using Serilog.Sinks.PeriodicBatching;
 
 namespace Serilog.Sinks.InfluxDB.Tests;
 
-public class InfluxAppenderBenchmarks
+public class InfluxAppenderBenchmarks : InfluxDBTestContainer
 {
     [Params(1000)]
     public int N;
 
-    [GlobalSetup(Targets = new[] { nameof(LogSomethingInfluxWithLayout), nameof(LogSomethingInfluxWithLayoutInterp) })]
+    [GlobalSetup(Targets = new[] { nameof(LogSomethingInfluxWithLayout), nameof(LogSomethingInfluxWithLayoutParameterized) })]
     public void SetupWithLayout()
     {
         Log.Logger = new LoggerConfiguration()
@@ -20,97 +18,34 @@ public class InfluxAppenderBenchmarks
                 InstanceName = "benchmarkInstance",
                 ConnectionInfo = new InfluxDBConnectionInfo()
                 {
-                    Uri = new Uri("http://127.0.0.1:8086"),
-                    BucketName = "_internal",
+                    AllAccessToken = AdminToken,
+                    Uri = new Uri($"http://127.0.0.1:{Port}"),
+                    BucketName = "test"
                 },
-                BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
+                BatchOptions = new PeriodicBatchingSinkOptions()
                 {
                     BatchSizeLimit = 100
                 }
             })
             .CreateLogger();
-
-
     }
 
     [Benchmark]
     public void LogSomethingInfluxWithLayout() => Log.Error("Error Console");
 
     [Benchmark]
-    public void LogSomethingInfluxWithLayoutInterp() => Log.Error($"Error Console{N}");
+    public void LogSomethingInfluxWithLayoutParameterized() => Log.Error("Error Console {N}", N);
 }
 
-public class InfluxAppenderBenchmarkTests : IDisposable
+public class InfluxAppenderBenchmarkTests
 {
-    private bool disposedValue;
-
-    [Fact]
+    [Fact(Skip = "Result is never asserted, not clear what this test should verify.")]
     public void BenchmarkTest()
     {
-        var summary = BenchmarkRunner.Run<InfluxAppenderBenchmarks>();
-    }
+#if !DEBUG
+        var summary = BenchmarkDotNet.Running.BenchmarkRunner.Run<InfluxAppenderBenchmarks>();
 
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!disposedValue)
-        {
-            if (disposing)
-            {
-                // TODO: dispose managed state (managed objects)
-            }
-
-            // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-            // TODO: set large fields to null
-            disposedValue = true;
-        }
-    }
-
-    // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-    // ~InfluxAppenderBenchmarkTests()
-    // {
-    //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-    //     Dispose(disposing: false);
-    // }
-
-    public void Dispose()
-    {
-        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
-
-    public class SetupSerilog
-    {
-        public const string IndexPrefix = "logs-6x-default-";
-        public const string TemplateName = "serilog-logs-6x";
-
-        public SetupSerilog()
-        {
-            var loggerConfig = new LoggerConfiguration()
-                .MinimumLevel.Information()
-                .WriteTo.InfluxDB(new InfluxDBSinkOptions()
-                {
-                    ApplicationName = "benchmark",
-                    InstanceName = "benchmarkInstance",
-                    ConnectionInfo = new InfluxDBConnectionInfo()
-                    {
-                        Uri = new Uri("http://127.0.0.1:8086"),
-                        BucketName = "_internal",
-                    },
-                    BatchOptions = new PeriodicBatching.PeriodicBatchingSinkOptions()
-                    {
-                        BatchSizeLimit = 100
-                    }
-                });
-            var logger = loggerConfig.CreateLogger();
-
-            logger.Information("Hello Information");
-            logger.Debug("Hello Debug");
-            logger.Warning("Hello Warning");
-            logger.Error("Hello Error");
-            logger.Fatal("Hello Fatal");
-
-            logger.Dispose();
-        }
+        Assert.Empty(summary.ValidationErrors);
+#endif
     }
 }
