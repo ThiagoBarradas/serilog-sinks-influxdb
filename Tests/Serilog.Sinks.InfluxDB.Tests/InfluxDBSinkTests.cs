@@ -211,11 +211,11 @@ public static class InfluxDBSinkTests
                 .WriteTo.InfluxDB(new InfluxDBSinkOptions { ConnectionInfo = ConnectionInfo })
                 .CreateLogger();
 
-            Log.Information("quoted: '{Parameter}' `back-quotes` CRLF:\r\n LF:\n CR:\r TAB:\t \"double-quotes\" BS:\\r äöüß. EOL", "Some parameter");
+            Log.Information("quoted: '{Parameter}' `back-quotes` CRLF:\r\n LF:\n CR:\r TAB:\t \"double-quotes\" BS:\\r \u0001\u0002\u0003 å äöüß. EOL", "Some parameter");
 
             await Log.CloseAndFlushAsync();
 
-            await Verify(GetAllRowsAsync());
+            await Verify((await GetAllRowsAsync()).Where(row => row.Field == "message"));
         }
     }
 }

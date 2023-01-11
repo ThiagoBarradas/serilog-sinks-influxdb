@@ -18,19 +18,6 @@ static class ExtensionMethods
             return index;
         }
 
-        static int Mask(StringBuilder text, int index, char value)
-        {
-            switch ((int)value)
-            {
-                case < 0x20:
-                case >= 0x7F:
-                    text[index] = '?';
-                    break;
-            }
-
-            return index;
-        }
-
         var builder = new StringBuilder(text, 2 * text.Length);
 
         for (var index = 0; index < builder.Length; index++)
@@ -41,9 +28,8 @@ static class ExtensionMethods
             {
                 '\n' => Escape(builder, index, 'n'),
                 '\r' => Escape(builder, index, 'r'),
-                '\t' => index,
                 '\\' => Escape(builder, index, '\\'),
-                _ => Mask(builder, index, c)
+                _ => index
             };
         }
 
