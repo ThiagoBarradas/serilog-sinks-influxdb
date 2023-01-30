@@ -2,13 +2,15 @@
 A serilog sink that writes events to [InfluxDB](https://www.influxdata.com/) in syslog message format as described on the [Influx blog](https://www.influxdata.com/blog/writing-logs-directly-to-influxdb/).
 Supports platforms compatible with the [.NET Platform Standard](https://docs.microsoft.com/en-us/dotnet/standard/net-standard) `netstandard2.0`.
 
-Compatible with InfluxDB v2.0
+Compatible only with InfluxDB v2.0 and upwards
 
-**Warning:** Use library versions prior 2.0 for compatibility with influxdb v1.X
+**Warning: use for InfluxDB v1.X following nuget package : [![nuget](https://img.shields.io/nuget/v/Serilog.Sinks.InfluxDBV1.Syslog.svg)](https://www.nuget.org/packages/Serilog.Sinks.InfluxDBV1.Syslog)**
 
-### Getting Started 
+**for V1 see [Get Started for V1.X](#influxdb-v1x)**
 
-#### Version 2 (InfluxDB v2.X)
+## Getting Started 
+
+### InfluxDB v2.X
 
 To get started install the *Serilog.Sinks.InfluxDB.Syslog* package:
 
@@ -117,18 +119,19 @@ If using `appsettings.json` for configuration the following example illustrates 
 
 All those samples can be found under project subdirectory *samples* of this repository.
 
-#### Version 1 (InfluxDB v1.X)
 
-To get started install the *Serilog.Sinks.InfluxDB.Syslog* package:
+### InfluxDB v1.X
+
+**For InfluxDB v1.X use following nuget package :** [![nuget](https://img.shields.io/nuget/v/Serilog.Sinks.InfluxDBV1.Syslog.svg)](https://www.nuget.org/packages/Serilog.Sinks.InfluxDBV1.Syslog)
 
 ```powershell
-PM> Install-Package Serilog.Sinks.InfluxDB.Syslog -Version 1.3.1
+PM> Install-Package Serilog.Sinks.InfluxDBV1.Syslog -Version 1.3.1
 ```
 
 OR
 
 ```bash
-$ dotnet add package Serilog.Sinks.InfluxDB.Syslog --version 1.3.1
+$ dotnet add package Serilog.Sinks.InfluxDBV1.Syslog --version 1.3.1
 ```
 
 If running locally for development purpose, you can use *docker-compose.yml* at root of this repository and adapt volumes if needed
@@ -174,7 +177,7 @@ If using `appsettings.json` for configuration the following example illustrates 
 ```javascript
 {
     "Serilog": {
-        "Using": ["Serilog.Sinks.Console", "Serilog.Sinks.InfluxDB.Syslog"],
+        "Using": ["Serilog.Sinks.Console", "Serilog.Sinks.InfluxDBV1.Syslog"],
         "MinimumLevel": {
           "Default": "Information",
           "Override": {
@@ -213,7 +216,7 @@ If using `appsettings.json` for configuration the following example illustrates 
 }
 ```
 
-### Build Status
+## Build Status
 
 [![Latest Release](https://img.shields.io/nuget/v/Serilog.Sinks.InfluxDB.Syslog?logo=nuget&label=release&style=for-the-badge)](https://www.nuget.org/packages/Serilog.Sinks.InfluxDB.Syslog)
 [![Latest Pre-Release](https://img.shields.io/nuget/vpre/Serilog.Sinks.InfluxDB.Syslog?logo=nuget&color=yellow&label=pre-release&style=for-the-badge)](https://www.nuget.org/packages/Serilog.Sinks.InfluxDB.Syslog/absoluteLatest)
@@ -224,7 +227,7 @@ If using `appsettings.json` for configuration the following example illustrates 
 | -------- | -------------- |
 |Main Branch|[![Build status](https://ci.appveyor.com/api/projects/status/uc9y3i52t0dpvxq8/branch/main?svg=true)](https://ci.appveyor.com/project/MarkZither/serilog-sinks-influxdb/branch/main)|
 
-### Benchmarks
+## Benchmarks
 
 BenchmarkDotNet=v0.12.1, OS=Windows 10.0.19042
 
@@ -239,18 +242,18 @@ Intel Core i7-2640M CPU 2.80GHz (Sandy Bridge), 1 CPU, 4 logical and 2 physical 
 |------------- |----- |---------:|----------:|----------:|
 | LogSomething | 1000 | 5.781 us | 0.1832 us | 0.5315 us |
 
-### Troubleshooting
+## Troubleshooting
 
 > Nothing showed up, what can I do?
 
 If events don't appear in InfluxDb after looking in corresponding database via Chronograf, Grafana or else. Either your application was unable to contact the InfluxDb server, or else the InfluxDb server rejected the log events for some reason.
 
-#### Server-side issues
+## Server-side issues
 
 The InfluxDb server may reject incoming events if they're missing required credentials ([check troubleshoot articles on influxdb](https://docs.influxdata.com/influxdb/v1.8/troubleshooting/), if the payload is corrupted somehow, or if the log events are too large to accept.
 
 
-#### Client-side issues
+## Client-side issues
 
 If there's no information in the ingestion log, the application was probably unable to reach the server because of network configuration or connectivity issues. These are reported to the application through Serilog's `SelfLog`.
 
@@ -268,7 +271,7 @@ Serilog.Debugging.SelfLog.Enable(message => {
 });
 ```
 
-#### Troubleshooting checklist
+## Troubleshooting checklist
 
 * Check InfluxDb connectivity and if _Server-side issues_ see section above
 * Turn on the Serilog SelfLog as described above to check for connectivity problems and other issues on the client side.

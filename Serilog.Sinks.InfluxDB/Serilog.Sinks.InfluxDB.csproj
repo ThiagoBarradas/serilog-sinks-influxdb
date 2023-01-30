@@ -18,8 +18,12 @@
     <RootNamespace>Serilog</RootNamespace>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>All</AnalysisMode>
-    <Version>2.3.2</Version>
+    <Version>2.3.3</Version>
     <PackageReleaseNotes>
+      2.3.3:
+      - **Warning - Use https://www.nuget.org/packages/Serilog.Sinks.InfluxDBV1.Syslog nuget for InfluxDB V1.XX**
+      - Update nuget dependencies including InfluxDB.Client which use InfluxDBClient constructor instead of InfluxDBClientFactory
+      - Split Serilog.Sinks.InfluxDB.Syslog and Serilog.Sinks.InfluxDBV1.Syslog
       2.3.2:
       - Revert fix for https://github.com/pada57/serilog-sinks-influxdb/issues/28
       2.3.1:
@@ -80,7 +84,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="InfluxDB.Client" Version="4.9.0" />
+    <PackageReference Include="InfluxDB.Client" Version="4.10.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
