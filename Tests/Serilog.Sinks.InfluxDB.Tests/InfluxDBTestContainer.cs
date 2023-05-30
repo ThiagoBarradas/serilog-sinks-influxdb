@@ -10,7 +10,7 @@ public class InfluxDBTestContainer : IAsyncLifetime, IAsyncDisposable
 {
     public const string AdminToken = "my-super-secret-admin-token";
 
-    public TestcontainersContainer TestContainer { get; private set; } = null!;
+    public IContainer TestContainer { get; private set; } = null!;
     public InfluxDBClient InfluxDBClient { get; private set; } = null!;
     public Bucket DefaultBucket { get; private set; } = null!;
     public ushort Port { get; private set; }
@@ -48,16 +48,27 @@ public class InfluxDBTestContainer : IAsyncLifetime, IAsyncDisposable
     {
         bucketName ??= DefaultBucket.Name;
 
-        var query = $@"from(bucket: ""{bucketName}"")
-  |> range(start: -1h)
-  |> filter(fn: (r) => r[""_measurement""] == ""syslog"")
-";
+        var query = $"""
+    from(bucket: "{bucketName}")
+      |> range(start: -1h)
+      |> filter(fn: (r) => r["_measurement"] == "syslog")
+    """;
+
         var result = new List<QueryResult>();
 
-        await InfluxDBClient.GetQueryApi().QueryAsync(query, record =>
+        // First query may return nothing, retry until data is available
+        for (var i = 0; i < 10; i++)
         {
-            result.Add(new QueryResult(record));
-        });
+            await InfluxDBClient.GetQueryApi().QueryAsync(query, record =>
+            {
+                result.Add(new QueryResult(record));
+            });
+
+            if (result.Any())
+                break;
+
+            await Task.Delay(200);
+        }
 
         return result;
     }
@@ -74,7 +85,7 @@ public class InfluxDBTestContainer : IAsyncLifetime, IAsyncDisposable
             { "DOCKER_INFLUXDB_INIT_ADMIN_TOKEN", AdminToken }
         };
 
-        TestContainer = new TestcontainersBuilder<TestcontainersContainer>()
+        TestContainer = new ContainerBuilder()
             .WithName(Guid.NewGuid().ToString())
             .WithPortBinding(8086, true)
             // .WithPortBinding(49227, 8086)
